@@ -10,6 +10,8 @@ jobs:
   test:
     name: Run Pytest Suite & Linting
     runs-on: ubuntu-latest
+    env:
+      GITHUB_APP_ID: "4492546"
     strategy:
       matrix:
         python-version: ["3.11", "3.12"]

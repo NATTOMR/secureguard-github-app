@@ -26,8 +26,9 @@ from app.main import create_app
 @pytest.fixture(autouse=True)
 def setup_test_env(monkeypatch):
     """Ensure GITHUB_APP_ID is set during test runs if missing from environment."""
-    if not os.getenv("GITHUB_APP_ID"):
-        monkeypatch.setenv("GITHUB_APP_ID", "4492546")
+    from app.core.config import get_settings
+    monkeypatch.setenv("GITHUB_APP_ID", "4492546")
+    get_settings.cache_clear()
 
 
 @pytest.fixture

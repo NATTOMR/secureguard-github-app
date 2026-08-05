@@ -61,10 +61,17 @@ class Settings(BaseSettings):
     SCAN_TIMEOUT: int = Field(default=120, description="Scanner execution timeout in seconds")
     MAX_REPO_SIZE_MB: int = Field(default=500, description="Maximum allowed repository size in MB")
 
-    @field_validator("GITHUB_APP_ID", "GITHUB_INSTALLATION_ID", mode="before")
+    @field_validator("GITHUB_APP_ID", mode="before")
     @classmethod
-    def empty_str_to_none(cls, v: Any) -> Any:
-        if v == "" or v is None:
+    def sanitize_app_id(cls, v: Any) -> Any:
+        if v == "":
+            return 4492546
+        return v
+
+    @field_validator("GITHUB_INSTALLATION_ID", mode="before")
+    @classmethod
+    def sanitize_installation_id(cls, v: Any) -> Any:
+        if v == "":
             return None
         return v
 
