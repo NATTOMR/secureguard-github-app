@@ -196,6 +196,52 @@ Low: 0
 **Description:** Found potential AWS Access Key ID
 ```
 
+### Example Pull Request Review Bot Comment
+
+```markdown
+# 🛡 SecureGuard Security Review
+
+## Summary
+
+| Severity | Count |
+|----------|------:|
+| Critical | 0 |
+| High | 1 |
+| Medium | 1 |
+| Low | 0 |
+
+---
+
+## Findings
+
+### 🔴 High
+
+**Hardcoded GitHub Token**
+
+File:
+app/config.py
+
+Line:
+18
+
+Recommendation:
+
+Move token to environment variables.
+
+---
+
+### 🟡 Medium
+
+**subprocess(shell=True)**
+
+File:
+utils.py
+
+Recommendation:
+
+Avoid shell=True.
+```
+
 ---
 
 ## 🧪 Running Tests

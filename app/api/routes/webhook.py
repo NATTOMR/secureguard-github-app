@@ -46,11 +46,41 @@ async def process_webhook_event(
         elif event_type == "pull_request":
             action = payload.get("action")
             if action not in ("opened", "synchronize", "reopened"):
-                logger.info("Ignoring pull_request action '%s'.", action)
+                logger.info("Ignoring pull_request action '%s' (only opened, synchronize, reopened are processed).", action)
                 return
             pr_data = payload.get("pull_request", {})
+            head_ref = pr_data.get("head", {}).get("ref", "")
             commit_sha = pr_data.get("head", {}).get("sha")
             pr_number = pr_data.get("number")
+
+            if not owner or not repo or not pr_number or not commit_sha:
+                logger.warning("Missing required PR details in webhook payload.")
+                return
+
+            logger.info("Executing PR scan & review bot for %s/%s PR #%d (action: %s)", owner, repo, pr_number, action)
+            from app.services.pr_scan_service import PRScanService
+            from app.github.pr_review_service import PRReviewService
+
+            pr_scan_service = PRScanService(auth_manager=scan_service.auth_manager)
+            pr_review_service = PRReviewService()
+
+            pr_result = await pr_scan_service.scan_pull_request(
+                owner=owner,
+                repo=repo,
+                pr_number=pr_number,
+                head_ref=head_ref,
+                head_sha=commit_sha,
+                installation_id=installation_id,
+            )
+            report_md = pr_review_service.generate_pr_markdown_report(pr_result)
+
+            if scan_service.auth_manager and installation_id:
+                try:
+                    token = await scan_service.auth_manager.get_installation_token(installation_id)
+                    await pr_review_service.post_or_update_pr_comment(owner, repo, pr_number, report_md, token)
+                except Exception as pe:
+                    logger.error("Failed to post/update PR review comment on PR #%d: %s", pr_number, str(pe))
+            return
 
         if not commit_sha:
             logger.warning("Could not determine target commit SHA from webhook event.")
