@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SecureGuard Enterprise API Portal</title>
+  <link rel="stylesheet" href="/static/css/docs_enterprise.css">
+  <!-- FontAwesome Icons & Google Fonts -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+  <!-- Header Navbar -->
+  <header class="portal-header">
+    <div class="brand-wrapper">
+      <div class="brand-icon"><i class="fa-solid fa-shield-halved"></i></div>
+      <div class="brand-text">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <h1>SecureGuard API Portal</h1>
+          <span style="background: rgba(59, 130, 246, 0.2); border: 1px solid var(--border-color); color: var(--accent-light); font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 9999px;">v0.1.0 Enterprise</span>
+        </div>
+        <p>Enterprise Security Platform OpenAPI 3.0 Documentation</p>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <!-- Search Box -->
+      <div class="search-box">
+        <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
+        <input type="text" id="api-search-input" placeholder="Search API endpoints (e.g. scan, auth, ai)...">
+      </div>
+
+      <!-- Navigation Links -->
+      <a href="/dashboard" class="nav-link"><i class="fa-solid fa-gauge-high"></i> Dashboard</a>
+      <a href="/docs" target="_blank" class="nav-link"><i class="fa-solid fa-code"></i> Swagger UI</a>
+      <a href="/openapi.json" target="_blank" class="nav-link"><i class="fa-solid fa-file-code"></i> JSON Spec</a>
+
+      <!-- GitHub User Avatar -->
+      <div style="display: flex; align-items: center; gap: 0.5rem; border-left: 1px solid var(--border-color); padding-left: 1rem;">
+        <div style="width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--accent)); display: flex; align-items: center; justify-content: center; font-weight: 700; color: white; font-size: 0.85rem; border: 2px solid var(--accent-light);">SG</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Portal Container -->
+  <main class="portal-container">
+
+    <!-- Hero Title -->
+    <div class="portal-hero">
+      <h2>Enterprise API Developer Documentation</h2>
+      <p>Explore production REST APIs for dual security scanning, repository discovery, AI code remediation, SOC platform integration, and compliance exports.</p>
+    </div>
+
+    <!-- Cards Grid (Populated dynamically from OpenAPI JSON) -->
+    <div class="module-grid" id="module-cards-grid">
+      <div style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 3rem;">
+        <i class="fa-solid fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem; color: var(--accent);"></i>
+        <p>Loading OpenAPI 3.0 specification from <code>/openapi.json</code>...</p>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Side Drawer / Modal Overlay for Module Endpoints -->
+  <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer(event)">
+    <div class="drawer-content" onclick="event.stopPropagation()">
+      <div class="drawer-header">
+        <div>
+          <h3 id="drawer-module-title" style="font-size: 1.4rem; font-weight: 800; color: #ffffff;">Module Endpoints</h3>
+          <p id="drawer-module-subtitle" style="font-size: 0.85rem; color: var(--text-muted);">Inspect endpoints, parameters, and execute live API requests.</p>
+        </div>
+        <button class="drawer-close-btn" onclick="closeDrawer()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div id="drawer-endpoints-list" style="display: flex; flex-direction: column; gap: 1.5rem;">
+        <!-- Endpoint cards populated by JavaScript -->
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript Single Page App Engine -->
+  <script>
+    let openApiData = null;
+
+    // Static Module Metadata Mapping
+    const moduleDefinitions = [
+      {
+        id: 'auth',
+        title: 'GitHub Authentication',
+        icon: 'fa-key',
+        description: 'RS256 JWT generation, RSA key verification, and GitHub App Installation Token acquisition.',
+        paths: ['/auth/status', '/auth/test']
+      },
+      {
+        id: 'scan',
+        title: 'Security Scanning',
+        icon: 'fa-shield-halved',
+        description: 'Dual-engine secret detection (Gitleaks) and SAST analysis (Semgrep) orchestrator.',
+        paths: ['/scan']
+      },
+      {
+        id: 'repositories',
+        title: 'Enterprise Repository Discovery',
+        icon: 'fa-folder-tree',
+        description: 'Automatic GitHub App repository discovery, metadata synchronization, and risk scoring.',
+        paths: ['/api/repositories', '/api/repositories/{owner}/{repo}', '/api/repositories/sync']
+      },
+      {
+        id: 'dashboard',
+        title: 'Dashboard APIs',
+        icon: 'fa-chart-pie',
+        description: 'Aggregate metric cards, scan history timeline, findings filters, and webhook audit logs.',
+        paths: ['/api/dashboard', '/api/scans', '/api/findings', '/api/events', '/api/dashboard/trends', '/api/dashboard/history', '/api/dashboard/leaderboard', '/api/dashboard/common-vulnerabilities', '/api/dashboard/scanner-usage', '/api/dashboard/weekly-stats']
+      },
+      {
+        id: 'ai',
+        title: 'AI Security Assistant',
+        icon: 'fa-brain',
+        description: 'Generative AI vulnerability analysis, CVSS/OWASP mapping, and code remediation.',
+        paths: ['/api/ai/health', '/api/ai/providers', '/api/ai/analyze', '/api/ai/fix', '/api/ai/report', '/api/ai/chat']
+      },
+      {
+        id: 'soc',
+        title: 'SOC Integrations',
+        icon: 'fa-network-wired',
+        description: 'SIEM and SOAR connectors for Wazuh, Splunk HEC, Azure Sentinel, Elastic, TheHive, MISP, Slack, Teams, Discord.',
+        paths: ['/api/integrations', '/api/integrations/status', '/api/integrations/test', '/api/integrations/sync']
+      },
+      {
+        id: 'github',
+        title: 'GitHub Issue Automation',
+        icon: 'fa-circle-exclamation',
+        description: 'Automated GitHub security issue generation with deduplication and tracking.',
+        paths: ['/api/github/issues', '/api/github/issues/create', '/api/github/issues/{id}']
+      },
+      {
+        id: 'reports',
+        title: 'Security Reports & Exports',
+        icon: 'fa-file-pdf',
+        description: 'SARIF 2.1.0 JSON format for GitHub Code Scanning, CISO Executive PDF, and HTML reports.',
+        paths: ['/api/export/sarif/{scan_id}', '/api/export/pdf/{scan_id}', '/api/export/html/{scan_id}']
+      },
+      {
+        id: 'schemas',
+        title: 'Schemas & Data Models',
+        icon: 'fa-database',
+        description: 'JSON Schema object definitions for repositories, scans, findings, and AI requests.',
+        paths: []
+      }
+    ];
+
+    // Fetch OpenAPI JSON Spec
+    async function initPortal() {
+      try {
+        const res = await fetch('/openapi.json');
+        openApiData = await res.json();
+        renderModuleCards();
+      } catch (err) {
+        document.getElementById('module-cards-grid').innerHTML = `
+          <div style="grid-column: 1 / -1; text-align: center; color: var(--status-delete); padding: 3rem;">
+            <i class="fa-solid fa-triangle-exclamation" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+            <p>Failed to load <code>/openapi.json</code>: ${err.message}</p>
+          </div>
+        `;
+      }
+    }
+
+    // Render Module Cards Grid
+    function renderModuleCards(filterQuery = '') {
+      const grid = document.getElementById('module-cards-grid');
+      const query = filterQuery.toLowerCase().trim();
+
+      const cardsHtml = moduleDefinitions.map(mod => {
+        // Collect endpoints belonging to this module
+        let endpoints = [];
+        if (openApiData && openApiData.paths) {
+          Object.keys(openApiData.paths).forEach(pathKey => {
+            if (mod.paths.includes(pathKey) || (mod.id === 'schemas' && false)) {
+              const methods = openApiData.paths[pathKey];
+              Object.keys(methods).forEach(method => {
+                endpoints.push({ path: pathKey, method: method.toUpperCase(), summary: methods[method].summary || pathKey });
+              });
+            }
+          });
+        }
+
+        // Schema fallback count
+        if (mod.id === 'schemas' && openApiData && openApiData.components && openApiData.components.schemas) {
+          const schemaKeys = Object.keys(openApiData.components.schemas);
+          endpoints = schemaKeys.map(k => ({ path: `#/components/schemas/${k}`, method: 'SCHEMA', summary: k }));
+        }
+
+        // Filter matching
+        if (query) {
+          const matchTitle = mod.title.toLowerCase().includes(query);
+          const matchDesc = mod.description.toLowerCase().includes(query);
+          const matchEndpoint = endpoints.some(e => e.path.toLowerCase().includes(query) || e.summary.toLowerCase().includes(query));
+          if (!matchTitle && !matchDesc && !matchEndpoint) return '';
+        }
+
+        const previewList = endpoints.slice(0, 3).map(e => `
+          <div class="endpoint-preview-item">
+            <span class="method-badge method-${e.method.toLowerCase()}">${e.method}</span>
+            <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${e.path}</span>
+          </div>
+        `).join('');
+
+        return `
+          <div class="module-card">
+            <div class="module-card-header">
+              <div class="module-icon"><i class="fa-solid ${mod.icon}"></i></div>
+              <span class="endpoint-count-badge">${endpoints.length} Endpoints</span>
+            </div>
+
+            <div>
+              <div class="module-title">${mod.title}</div>
+              <p class="module-description">${mod.description}</p>
+            </div>
+
+            <div class="endpoint-preview-list">
+              ${previewList}
+            </div>
+
+            <div class="module-footer">
+              <button class="btn-open" onclick="openModuleDrawer('${mod.id}')">
+                Open Module <i class="fa-solid fa-arrow-right"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      grid.innerHTML = cardsHtml || '<div style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 3rem;">No modules matched search filter.</div>';
+    }
+
+    // Open Drawer & Display Endpoints
+    function openModuleDrawer(moduleId) {
+      const mod = moduleDefinitions.find(m => m.id === moduleId);
+      if (!mod) return;
+
+      document.getElementById('drawer-module-title').innerText = mod.title;
+      document.getElementById('drawer-module-subtitle').innerText = mod.description;
+
+      const container = document.getElementById('drawer-endpoints-list');
+
+      // Build endpoints HTML
+      let html = '';
+      if (mod.id === 'schemas') {
+        const schemas = openApiData.components ? openApiData.components.schemas : {};
+        html = Object.keys(schemas).map(sName => `
+          <div class="endpoint-detail-card">
+            <div style="font-weight: 700; color: var(--accent-light); font-size: 1.1rem;">${sName}</div>
+            <pre class="code-snippet">${JSON.stringify(schemas[sName], null, 2)}</pre>
+          </div>
+        `).join('');
+      } else {
+        mod.paths.forEach(pathKey => {
+          if (openApiData && openApiData.paths && openApiData.paths[pathKey]) {
+            const methods = openApiData.paths[pathKey];
+            Object.keys(methods).forEach(m => {
+              const op = methods[m];
+              const methodUpper = m.toUpperCase();
+
+              // Generate Code Snippets
+              const curlCode = `curl -X ${methodUpper} "http://127.0.0.1:8000${pathKey}" -H "Accept: application/json"`;
+              const pyCode = `import requests\n\nresponse = requests.${m.toLowerCase()}("http://127.0.0.1:8000${pathKey}")\nprint(response.json())`;
+              const jsCode = `fetch("http://127.0.0.1:8000${pathKey}")\n  .then(res => res.json())\n  .then(data => console.log(data));`;
+
+              html += `
+                <div class="endpoint-detail-card">
+                  <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                      <span class="method-badge method-${m.toLowerCase()}" style="font-size: 0.85rem; padding: 0.3rem 0.6rem;">${methodUpper}</span>
+                      <code style="font-size: 1rem; color: #ffffff; font-weight: 700;">${pathKey}</code>
+                    </div>
+                    <button class="btn-open" style="padding: 0.4rem 0.85rem; font-size: 0.8rem;" onclick="executeApi('${methodUpper}', '${pathKey}', 'res-${pathKey.replace(/[^a-zA-Z0-9]/g, '')}')">
+                      <i class="fa-solid fa-play"></i> Execute API
+                    </button>
+                  </div>
+
+                  <p style="font-size: 0.9rem; color: var(--text-muted);">${op.summary || op.description || 'No description provided.'}</p>
+
+                  <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    <div style="font-weight: 700; font-size: 0.8rem; color: var(--accent-light);">CODE SNIPPET (CURL)</div>
+                    <pre class="code-snippet">${curlCode}</pre>
+                  </div>
+
+                  <!-- Live Response Container -->
+                  <div id="res-${pathKey.replace(/[^a-zA-Z0-9]/g, '')}" style="display: none; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem;">
+                    <div style="font-weight: 700; font-size: 0.8rem; color: var(--status-post);">LIVE RESPONSE OUTPUT</div>
+                    <pre class="code-snippet" style="border-color: var(--status-post);"></pre>
+                  </div>
+                </div>
+              `;
+            });
+          }
+        });
+      }
+
+      container.innerHTML = html || '<p style="color: var(--text-muted);">No endpoint details found for this module.</p>';
+      document.getElementById('drawer-overlay').classList.add('active');
+    }
+
+    function closeDrawer(e) {
+      if (!e || e.target === document.getElementById('drawer-overlay') || e.target.closest('.drawer-close-btn')) {
+        document.getElementById('drawer-overlay').classList.remove('active');
+      }
+    }
+
+    // Live API Execution
+    async function executeApi(method, path, resultBoxId) {
+      const box = document.getElementById(resultBoxId);
+      if (!box) return;
+
+      const pre = box.querySelector('pre');
+      box.style.display = 'flex';
+      pre.innerText = 'Sending live HTTP request...';
+
+      const startTime = performance.now();
+      try {
+        const res = await fetch(path, { method });
+        const latency = Math.round(performance.now() - startTime);
+        const data = await res.json();
+
+        pre.innerText = `HTTP ${res.status} ${res.statusText} (${latency}ms)\n\n` + JSON.stringify(data, null, 2);
+      } catch (err) {
+        pre.innerText = `Request Error: ${err.message}`;
+      }
+    }
+
+    // Initialize Portal on DOM Load
+    document.addEventListener('DOMContentLoaded', () => {
+      initPortal();
+
+      // Search Listener
+      document.getElementById('api-search-input').addEventListener('input', (e) => {
+        renderModuleCards(e.target.value);
+      });
+    });
+  </script>
+</body>
+</html>

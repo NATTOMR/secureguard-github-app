@@ -83,6 +83,11 @@ def create_app() -> FastAPI:
     def render_dashboard():
         return FileResponse("app/templates/dashboard.html")
 
+    @app.get("/docs-enterprise", include_in_schema=False)
+    @app.get("/portal", include_in_schema=False)
+    def render_docs_enterprise():
+        return FileResponse("app/templates/docs_enterprise.html")
+
     return app
 
 
