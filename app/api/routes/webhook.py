@@ -58,7 +58,24 @@ async def process_webhook_event(
 
         logger.info("Automated webhook scan starting for %s/%s at commit %s", owner, repo, commit_sha)
         
-        # Execute scan
+        # 1. Run Gitleaks pipeline (clone -> scan -> summarize -> cleanup)
+        pipeline_report = await scan_service.run_gitleaks_pipeline(
+            owner=owner, repo=repo, commit_sha=commit_sha, installation_id=installation_id
+        )
+
+        # 2. If secrets found, create GitHub Issue
+        if pipeline_report.get("findings") and len(pipeline_report["findings"]) > 0:
+            from app.services.github_issue_service import GitHubIssueService
+            issue_service = GitHubIssueService()
+            auth_manager = scan_service.auth_manager
+            if auth_manager and installation_id:
+                try:
+                    token = await auth_manager.get_installation_token(installation_id)
+                    await issue_service.create_security_issue(owner, repo, pipeline_report, token)
+                except Exception as ie:
+                    logger.error("Failed to create issue from pipeline report: %s", str(ie))
+
+        # 3. Also execute dual scan for PR comments if applicable
         scan_result = await scan_service.execute_scan(
             owner=owner,
             repo=repo,
@@ -66,7 +83,7 @@ async def process_webhook_event(
             installation_id=installation_id,
         )
 
-        # Notify GitHub
+        # Notify GitHub (PR comments / commit comments)
         await notification_service.notify(
             scan_result=scan_result,
             owner=owner,

@@ -32,12 +32,59 @@ from app.core.logging import get_logger
 logger = get_logger(__name__)
 
 
+from app.auth.github_auth import GitHubAuthManager
+from app.scanners.gitleaks_scanner import GitleaksScannerService
+from app.services.github_clone import GitHubCloneService
+
+
 class ScanService:
     """Orchestrates security scanning operations on target repositories."""
 
-    def __init__(self, scanners: List[BaseScanner], repo_service: RepositoryService) -> None:
-        self.scanners = scanners
+    def __init__(
+        self,
+        scanners: Optional[List[BaseScanner]] = None,
+        repo_service: Optional[RepositoryService] = None,
+        clone_service: Optional[GitHubCloneService] = None,
+        gitleaks_scanner: Optional[GitleaksScannerService] = None,
+        auth_manager: Optional[GitHubAuthManager] = None,
+    ) -> None:
+        self.scanners = scanners or []
         self.repo_service = repo_service
+        self.clone_service = clone_service or GitHubCloneService()
+        self.gitleaks_scanner = gitleaks_scanner or GitleaksScannerService()
+        self.auth_manager = auth_manager
+
+    async def run_gitleaks_pipeline(
+        self, owner: str, repo: str, commit_sha: Optional[str] = None, installation_id: Optional[int] = None
+    ) -> Dict[str, Any]:
+        """Run complete Gitleaks scanning pipeline: clone -> scan -> summarize -> cleanup."""
+        logger.info("Executing Gitleaks pipeline for %s/%s", owner, repo)
+
+        token = None
+        if self.auth_manager and installation_id:
+            try:
+                token = await self.auth_manager.get_installation_token(installation_id)
+            except Exception as e:
+                logger.warning("Failed to obtain installation token for clone: %s", str(e))
+
+        clone_url = f"https://github.com/{owner}/{repo}.git"
+        temp_path = None
+        try:
+            # 1. Clone repository
+            temp_path = self.clone_service.clone_repository(clone_url, token, commit_sha)
+            
+            # 2. Run Gitleaks scanner
+            report = self.gitleaks_scanner.scan_repository(temp_path)
+            
+            logger.info(
+                "Pipeline finished for %s/%s: %d critical, %d high, %d medium, %d low findings.",
+                owner, repo, report["critical"], report["high"], report["medium"], report["low"]
+            )
+            return report
+        finally:
+            # 3. Cleanup temp directory
+            if temp_path:
+                self.clone_service.cleanup_repository(temp_path)
 
     async def execute_scan(
         self, owner: str, repo: str, commit_sha: str, installation_id: Optional[int] = None
@@ -51,12 +98,15 @@ class ScanService:
         all_findings: List[Finding] = []
         
         try:
-            temp_dir = await self.repo_service.download_repository(
-                owner, repo, commit_sha, installation_id
-            )
+            if self.repo_service:
+                temp_dir = await self.repo_service.download_repository(
+                    owner, repo, commit_sha, installation_id
+                )
             
             # 2. Run scanners
             for scanner in self.scanners:
+                if not temp_dir:
+                    continue
                 logger.info("Running scanner %s on %s", scanner.name, temp_dir)
                 try:
                     raw_findings = await scanner.scan(temp_dir)
@@ -78,7 +128,7 @@ class ScanService:
                     
         finally:
             # 3. Cleanup
-            if temp_dir:
+            if temp_dir and self.repo_service:
                 self.repo_service.cleanup_repository(temp_dir)
                 
         # 4. Aggregate results

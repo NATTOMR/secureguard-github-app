@@ -55,6 +55,12 @@ class Settings(BaseSettings):
     GITHUB_PRIVATE_KEY_PATH: Optional[str] = Field(default=None, description="Path or content of GitHub App RSA private key")
     PRIVATE_KEY_PATH: Optional[str] = Field(default=None, description="Alias for private key path")
 
+    # Scanner Configuration
+    GITLEAKS_BINARY: str = Field(default="gitleaks", description="Path or command for Gitleaks CLI binary")
+    TEMP_SCAN_DIR: str = Field(default="scratch/tmp_scans", description="Directory for temporary repository clones")
+    SCAN_TIMEOUT: int = Field(default=120, description="Scanner execution timeout in seconds")
+    MAX_REPO_SIZE_MB: int = Field(default=500, description="Maximum allowed repository size in MB")
+
     @field_validator("GITHUB_APP_ID", "GITHUB_INSTALLATION_ID", mode="before")
     @classmethod
     def empty_str_to_none(cls, v: Any) -> Any:

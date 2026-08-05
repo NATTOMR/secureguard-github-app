@@ -160,6 +160,42 @@ curl -X POST "http://127.0.0.1:8000/scan" \
          }'
 ```
 
+### Example GitHub Webhook Event (`push`)
+
+```json
+Header: X-GitHub-Event: push
+Header: X-Hub-Signature-256: sha256=...
+
+{
+  "ref": "refs/heads/main",
+  "after": "7fd1a60b01f91b314f59955a4e4d4e80d8edf11d",
+  "repository": {
+    "name": "Hello-World",
+    "owner": { "login": "octocat" }
+  },
+  "installation": { "id": 123456 }
+}
+```
+
+### Example Security Report (GitHub Issue Body)
+
+```markdown
+# SecureGuard Security Report
+
+## Summary
+Critical: 1
+High: 0
+Medium: 0
+Low: 0
+
+## Findings
+**Severity:** CRITICAL
+**File:** `config/settings.py`
+**Line:** 14
+**Rule:** `aws-access-key`
+**Description:** Found potential AWS Access Key ID
+```
+
 ---
 
 ## 🧪 Running Tests
