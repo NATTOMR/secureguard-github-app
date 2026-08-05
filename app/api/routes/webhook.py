@@ -86,6 +86,15 @@ async def process_webhook_event(
             )
             report_md = pr_review_service.generate_pr_markdown_report(pr_result)
 
+            from app.db.session import SessionLocal
+            from app.db.repository import DatabaseRepository
+            try:
+                with SessionLocal() as db:
+                    dao = DatabaseRepository(db)
+                    dao.save_scan_result(owner, repo, commit_sha, pr_result, branch=head_ref, trigger="pull_request")
+            except Exception as dbe:
+                logger.warning("Could not persist PR scan result to DB: %s", str(dbe))
+
             if scan_service.auth_manager and installation_id:
                 try:
                     token = await scan_service.auth_manager.get_installation_token(installation_id)
@@ -113,6 +122,15 @@ async def process_webhook_event(
             commit_sha=commit_sha,
             installation_id=installation_id,
         )
+
+        from app.db.session import SessionLocal
+        from app.db.repository import DatabaseRepository
+        try:
+            with SessionLocal() as db:
+                dao = DatabaseRepository(db)
+                dao.save_scan_result(owner, repo, commit_sha, scan_result, trigger="push")
+        except Exception as dbe:
+            logger.warning("Could not persist push scan result to DB: %s", str(dbe))
 
         # 3. Publish Check Run
         from app.services.check_run_service import CheckRunService

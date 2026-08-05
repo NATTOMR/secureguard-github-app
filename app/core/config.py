@@ -66,6 +66,9 @@ class Settings(BaseSettings):
     MAX_ANNOTATIONS: int = Field(default=50, description="Maximum annotations per GitHub Checks API request")
     CHECK_RUN_NAME: str = Field(default="SecureGuard Security Scan", description="Name of the GitHub Check Run")
 
+    # Database Configuration
+    DATABASE_URL: str = Field(default="sqlite:///./secureguard.db", description="Database connection URL")
+
     @field_validator("GITHUB_APP_ID", mode="before")
     @classmethod
     def sanitize_app_id(cls, v: Any) -> Any:

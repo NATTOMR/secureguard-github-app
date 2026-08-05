@@ -22,10 +22,13 @@ from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.api.router import api_router
 from app.core.config import get_settings
 from app.core.logging import get_logger, setup_logging
+from app.db.session import init_db
 
 logger = get_logger(__name__)
 
@@ -36,6 +39,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     settings = get_settings()
     setup_logging(settings.LOG_LEVEL)
     logger.info("Initializing %s v%s...", settings.APP_NAME, settings.APP_VERSION)
+    try:
+        init_db()
+        logger.info("Database tables initialized successfully.")
+    except Exception as e:
+        logger.warning("Could not initialize database tables automatically: %s", str(e))
     yield
     logger.info("Shutting down %s...", settings.APP_NAME)
 
@@ -65,6 +73,15 @@ def create_app() -> FastAPI:
 
     # Attach router
     app.include_router(api_router)
+
+    # Mount static files and dashboard UI
+    import os
+    if os.path.exists("app/static"):
+        app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
+    @app.get("/dashboard", include_in_schema=False)
+    def render_dashboard():
+        return FileResponse("app/templates/dashboard.html")
 
     return app
 

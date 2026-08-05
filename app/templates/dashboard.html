@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SecureGuard Security Dashboard</title>
+  <link rel="stylesheet" href="/static/css/dashboard.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="brand">
+      <i class="fa-solid fa-shield-halved" style="color: #06b6d4;"></i>
+      <span>SecureGuard</span>
+    </div>
+    <ul class="nav-menu">
+      <li class="nav-item active"><a href="#"><i class="fa-solid fa-chart-line"></i> Overview</a></li>
+      <li class="nav-item"><a href="#repositories"><i class="fa-solid fa-folder-tree"></i> Repositories</a></li>
+      <li class="nav-item"><a href="#scans"><i class="fa-solid fa-microscope"></i> Scan History</a></li>
+      <li class="nav-item"><a href="#findings"><i class="fa-solid fa-bug"></i> Findings</a></li>
+      <li class="nav-item"><a href="#events"><i class="fa-solid fa-receipt"></i> Webhook Audit</a></li>
+    </ul>
+  </aside>
+
+  <!-- Main Content Wrapper -->
+  <div class="main-wrapper">
+    <!-- Header -->
+    <header class="header-bar">
+      <h2>Enterprise Security Dashboard</h2>
+      <div class="search-box">
+        <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: #94a3b8;"></i>
+        <input type="text" id="global-search" placeholder="Search repository, rule, file...">
+      </div>
+    </header>
+
+    <!-- Content Area -->
+    <main class="content-area">
+      <!-- Metric Cards Grid -->
+      <div class="cards-grid">
+        <div class="metric-card">
+          <div class="card-title">Repositories</div>
+          <div class="card-value" id="val-repos">0</div>
+        </div>
+        <div class="metric-card">
+          <div class="card-title">Total Scans</div>
+          <div class="card-value" id="val-scans">0</div>
+        </div>
+        <div class="metric-card" style="border-left: 4px solid var(--sev-critical);">
+          <div class="card-title">Critical Findings</div>
+          <div class="card-value" id="val-critical" style="color: var(--sev-critical);">0</div>
+        </div>
+        <div class="metric-card" style="border-left: 4px solid var(--sev-high);">
+          <div class="card-title">High Findings</div>
+          <div class="card-value" id="val-high" style="color: var(--sev-high);">0</div>
+        </div>
+        <div class="metric-card" style="border-left: 4px solid var(--sev-medium);">
+          <div class="card-title">Medium Findings</div>
+          <div class="card-value" id="val-medium" style="color: var(--sev-medium);">0</div>
+        </div>
+        <div class="metric-card" style="border-left: 4px solid var(--sev-low);">
+          <div class="card-title">Low / Info</div>
+          <div class="card-value" id="val-low" style="color: var(--sev-low);">0</div>
+        </div>
+      </div>
+
+      <!-- Charts Section -->
+      <div class="charts-grid">
+        <div class="panel-card">
+          <div class="panel-header">
+            <div class="panel-title">Findings Trend & Distribution</div>
+          </div>
+          <canvas id="trendChart" height="120"></canvas>
+        </div>
+        <div class="panel-card">
+          <div class="panel-header">
+            <div class="panel-title">Scanner Breakdown</div>
+          </div>
+          <canvas id="scannerChart" height="180"></canvas>
+        </div>
+      </div>
+
+      <!-- Recent Scans Table -->
+      <div class="panel-card" id="scans">
+        <div class="panel-header">
+          <div class="panel-title">Latest Security Scans</div>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Repository</th>
+                <th>Commit</th>
+                <th>Branch</th>
+                <th>Status</th>
+                <th>Issues</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody id="scan-table-body">
+              <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Loading scans data...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Audit Log Table -->
+      <div class="panel-card" id="events">
+        <div class="panel-header">
+          <div class="panel-title">Recent Webhook Deliveries</div>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Event</th>
+                <th>Delivery ID</th>
+                <th>Timestamp</th>
+              </tr>
+            </thead>
+            <tbody id="event-table-body">
+              <tr><td colspan="3" style="text-align: center; color: var(--text-muted);">Loading event log...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    async function loadDashboard() {
+      try {
+        const res = await fetch('/api/dashboard');
+        const data = await res.json();
+
+        document.getElementById('val-repos').innerText = data.total_repositories;
+        document.getElementById('val-scans').innerText = data.total_scans;
+        document.getElementById('val-critical').innerText = data.critical_findings;
+        document.getElementById('val-high').innerText = data.high_findings;
+        document.getElementById('val-medium').innerText = data.medium_findings;
+        document.getElementById('val-low').innerText = data.low_findings;
+
+        // Render Scanner Doughnut Chart
+        new Chart(document.getElementById('scannerChart'), {
+          type: 'doughnut',
+          data: {
+            labels: ['Gitleaks (Secrets)', 'Semgrep (SAST)'],
+            datasets: [{
+              data: [data.secrets_count, data.sast_count],
+              backgroundColor: ['#06b6d4', '#3b82f6']
+            }]
+          },
+          options: { plugins: { legend: { labels: { color: '#94a3b8' } } } }
+        });
+
+        // Render Severity Trend Chart
+        new Chart(document.getElementById('trendChart'), {
+          type: 'bar',
+          data: {
+            labels: ['Critical', 'High', 'Medium', 'Low'],
+            datasets: [{
+              label: 'Findings Severity Count',
+              data: [data.critical_findings, data.high_findings, data.medium_findings, data.low_findings],
+              backgroundColor: ['#ef4444', '#f97316', '#eab308', '#3b82f6']
+            }]
+          },
+          options: {
+            scales: {
+              x: { ticks: { color: '#94a3b8' } },
+              y: { ticks: { color: '#94a3b8' } }
+            },
+            plugins: { legend: { display: false } }
+          }
+        });
+
+        // Render Scans Table
+        const tbody = document.getElementById('scan-table-body');
+        if (data.latest_scans.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No scans executed yet.</td></tr>';
+        } else {
+          tbody.innerHTML = data.latest_scans.map(s => `
+            <tr>
+              <td><strong>${s.repo}</strong></td>
+              <td><code>${s.commit}</code></td>
+              <td>${s.branch}</td>
+              <td><span class="badge badge-${s.status === 'completed' ? 'low' : 'critical'}">${s.status}</span></td>
+              <td><strong>${s.findings_count}</strong></td>
+              <td>${new Date(s.started_at).toLocaleString()}</td>
+            </tr>
+          `).join('');
+        }
+
+        // Render Events Table
+        const evBody = document.getElementById('event-table-body');
+        if (data.recent_events.length === 0) {
+          evBody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--text-muted);">No webhook events recorded yet.</td></tr>';
+        } else {
+          evBody.innerHTML = data.recent_events.map(e => `
+            <tr>
+              <td><code>${e.event}</code></td>
+              <td>${e.delivery_id || 'N/A'}</td>
+              <td>${new Date(e.created_at).toLocaleString()}</td>
+            </tr>
+          `).join('');
+        }
+
+      } catch (err) {
+        console.error('Error loading dashboard data:', err);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadDashboard);
+  </script>
+</body>
+</html>

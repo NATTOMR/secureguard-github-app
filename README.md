@@ -267,6 +267,66 @@ Text:
 
 ---
 
+## 📊 Enterprise Web Dashboard
+
+Access the live interactive web dashboard at: [http://127.0.0.1:8000/dashboard](http://127.0.0.1:8000/dashboard)
+
+### 🗄️ Database ER Diagram
+
+```mermaid
+erDiagram
+    repositories ||--o{ scans : "has many"
+    repositories ||--o{ events : "logs"
+    scans ||--o{ findings : "contains"
+
+    repositories {
+        int id PK
+        string owner
+        string name
+        string default_branch
+        datetime created_at
+    }
+    scans {
+        string id PK
+        int repository_id FK
+        string commit_sha
+        string branch
+        string status
+        datetime started_at
+    }
+    findings {
+        string id PK
+        string scan_id FK
+        string scanner
+        string severity
+        string title
+        string file
+    }
+    events {
+        string id PK
+        int repository_id FK
+        string event
+        string delivery_id
+    }
+```
+
+---
+
+## 🌐 API Endpoints Reference
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/` | Root application metadata |
+| `GET` | `/health` | Application health check endpoint |
+| `GET` | `/dashboard` | Interactive Web Dashboard UI |
+| `GET` | `/api/dashboard` | Dashboard metric cards and severity overview |
+| `GET` | `/api/repositories` | Scanned repositories with risk score calculation |
+| `GET` | `/api/scans` | Full scan execution history |
+| `GET` | `/api/findings` | Filterable findings (by severity, scanner, status) |
+| `GET` | `/api/events` | Webhook delivery audit logs |
+
+---
+
 ## 🧪 Running Tests
 
 ```bash
