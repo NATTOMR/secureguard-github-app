@@ -17,7 +17,7 @@ Usage:
 """
 
 from fastapi import APIRouter
-from app.api.routes import ai, auth, dashboard, health, scan, webhook
+from app.api.routes import ai, auth, dashboard, health, integrations, scan, webhook
 
 api_router = APIRouter()
 
@@ -38,3 +38,6 @@ api_router.include_router(dashboard.router)
 
 # Include AI Assistant routes at /api/ai
 api_router.include_router(ai.router)
+
+# Include SOC Integrations routes at /api/integrations
+api_router.include_router(integrations.router)

@@ -82,6 +82,21 @@ class Settings(BaseSettings):
     AZURE_OPENAI_KEY: Optional[str] = Field(default=None, description="Azure OpenAI API key")
     AI_CACHE_ENABLED: bool = Field(default=True, description="Cache AI analysis responses")
 
+    # SOC Integration Configurations
+    WAZUH_URL: Optional[str] = Field(default=None, description="Wazuh API URL")
+    WAZUH_USERNAME: Optional[str] = Field(default=None, description="Wazuh API username")
+    WAZUH_PASSWORD: Optional[str] = Field(default=None, description="Wazuh API password")
+    SPLUNK_HEC_URL: Optional[str] = Field(default=None, description="Splunk HEC URL")
+    SPLUNK_HEC_TOKEN: Optional[str] = Field(default=None, description="Splunk HEC Token")
+    ELASTIC_URL: Optional[str] = Field(default=None, description="Elastic APM/Security URL")
+    ELASTIC_API_KEY: Optional[str] = Field(default=None, description="Elastic API Key")
+    SENTINEL_WORKSPACE_ID: Optional[str] = Field(default=None, description="Microsoft Sentinel Workspace ID")
+    SENTINEL_SHARED_KEY: Optional[str] = Field(default=None, description="Microsoft Sentinel Shared Key")
+    THEHIVE_URL: Optional[str] = Field(default=None, description="TheHive SOAR URL")
+    THEHIVE_API_KEY: Optional[str] = Field(default=None, description="TheHive API Key")
+    MISP_URL: Optional[str] = Field(default=None, description="MISP Threat Intel URL")
+    MISP_API_KEY: Optional[str] = Field(default=None, description="MISP API Key")
+
     @field_validator("GITHUB_APP_ID", mode="before")
     @classmethod
     def sanitize_app_id(cls, v: Any) -> Any:
