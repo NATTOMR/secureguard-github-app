@@ -54,3 +54,25 @@ def test_webhook_push_event_dispatch():
     )
     assert response.status_code == 200
     assert response.json()["event"] == "push"
+
+
+def test_webhook_handler_class():
+    """Test WebhookHandler class signature verification."""
+    from app.github.webhook_handler import WebhookHandler
+    handler = WebhookHandler(secret="my_secret")
+    payload = b'{"test": "payload"}'
+    
+    # Compute signature
+    digest = hmac.new(b"my_secret", msg=payload, digestmod=hashlib.sha256).hexdigest()
+    sig_header = f"sha256={digest}"
+    
+    assert handler.verify_signature(payload, sig_header) is True
+    assert handler.verify_signature(payload, "sha256=invalid_hash") is False
+
+
+def test_sanitize_string_helper():
+    """Test sanitize_string helper function."""
+    from app.utils.helpers import sanitize_string
+    dirty = "\x00Hello\x1f World!\x7f"
+    clean = sanitize_string(dirty)
+    assert clean == "Hello World!"

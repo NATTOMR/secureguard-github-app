@@ -16,6 +16,9 @@ Usage:
 """
 
 
+from app.core.security import verify_webhook_signature
+
+
 class WebhookHandler:
     """Validator and router for incoming GitHub webhook events."""
 
@@ -23,5 +26,5 @@ class WebhookHandler:
         self.secret = secret
 
     def verify_signature(self, payload: bytes, signature: str) -> bool:
-        """Verify GitHub HMAC SHA256 signature (Stub)."""
-        raise NotImplementedError("Webhook signature verification will be implemented in Phase 2.")
+        """Verify GitHub HMAC SHA256 signature."""
+        return verify_webhook_signature(payload, signature, self.secret)
