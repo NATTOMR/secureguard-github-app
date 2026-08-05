@@ -1,0 +1,134 @@
+import json
+from typing import Optional
+
+from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Request, status
+
+from app.core.config import Settings, get_settings
+from app.core.logging import get_logger
+from app.core.security import verify_webhook_signature
+from app.schemas.webhook import WebhookAckResponse
+from app.api.routes.scan import get_scan_service, get_notification_service
+from app.services.scan_service import ScanService
+from app.services.notification_service import GitHubNotificationService
+
+logger = get_logger(__name__)
+
+router = APIRouter()
+
+
+async def process_webhook_event(
+    event_type: str,
+    payload: dict,
+    scan_service: ScanService,
+    notification_service: GitHubNotificationService,
+) -> None:
+    """Background task handler for processing push and pull_request events."""
+    try:
+        installation_id = payload.get("installation", {}).get("id")
+        repo_data = payload.get("repository", {})
+        owner = repo_data.get("owner", {}).get("login")
+        repo = repo_data.get("name")
+
+        if not owner or not repo:
+            logger.warning("Webhook payload missing owner or repository name.")
+            return
+
+        commit_sha = None
+        pr_number = None
+
+        if event_type == "push":
+            commit_sha = payload.get("after")
+            # Ignore zero commit (branch deletion)
+            if not commit_sha or commit_sha == "0000000000000000000000000000000000000000":
+                logger.info("Ignoring push event for branch deletion.")
+                return
+
+        elif event_type == "pull_request":
+            action = payload.get("action")
+            if action not in ("opened", "synchronize", "reopened"):
+                logger.info("Ignoring pull_request action '%s'.", action)
+                return
+            pr_data = payload.get("pull_request", {})
+            commit_sha = pr_data.get("head", {}).get("sha")
+            pr_number = pr_data.get("number")
+
+        if not commit_sha:
+            logger.warning("Could not determine target commit SHA from webhook event.")
+            return
+
+        logger.info("Automated webhook scan starting for %s/%s at commit %s", owner, repo, commit_sha)
+        
+        # Execute scan
+        scan_result = await scan_service.execute_scan(
+            owner=owner,
+            repo=repo,
+            commit_sha=commit_sha,
+            installation_id=installation_id,
+        )
+
+        # Notify GitHub
+        await notification_service.notify(
+            scan_result=scan_result,
+            owner=owner,
+            repo=repo,
+            pr_number=pr_number,
+            installation_id=installation_id,
+        )
+
+    except Exception as e:
+        logger.error("Error processing webhook background task: %s", str(e), exc_info=True)
+
+
+@router.post(
+    "/webhook",
+    response_model=WebhookAckResponse,
+    status_code=status.HTTP_200_OK,
+    summary="GitHub Webhook Listener",
+    description="Receives and processes GitHub webhook events (push, pull_request) with signature verification.",
+)
+async def handle_webhook(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    x_github_event: Optional[str] = Header(None, alias="X-GitHub-Event"),
+    x_github_delivery: Optional[str] = Header(None, alias="X-GitHub-Delivery"),
+    x_hub_signature_256: Optional[str] = Header(None, alias="X-Hub-Signature-256"),
+    settings: Settings = Depends(get_settings),
+    scan_service: ScanService = Depends(get_scan_service),
+    notification_service: GitHubNotificationService = Depends(get_notification_service),
+) -> WebhookAckResponse:
+    """Handle incoming GitHub Webhook HTTP POST request."""
+    body_bytes = await request.body()
+
+    # Verify signature
+    if settings.GITHUB_WEBHOOK_SECRET:
+        if not verify_webhook_signature(body_bytes, x_hub_signature_256, settings.GITHUB_WEBHOOK_SECRET):
+            logger.warning("Invalid webhook signature for delivery %s", x_github_delivery)
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid webhook signature",
+            )
+
+    try:
+        payload = json.loads(body_bytes.decode("utf-8")) if body_bytes else {}
+    except Exception:
+        payload = {}
+
+    # Dispatch to background task if event is push or pull_request
+    if x_github_event in ("push", "pull_request"):
+        background_tasks.add_task(
+            process_webhook_event,
+            x_github_event,
+            payload,
+            scan_service,
+            notification_service,
+        )
+        msg = f"Webhook '{x_github_event}' queued for scanning"
+    else:
+        msg = f"Webhook '{x_github_event}' received (ignored)"
+
+    logger.info("Webhook %s processed: %s", x_github_delivery, msg)
+    return WebhookAckResponse(
+        status="received",
+        event=x_github_event,
+        delivery_id=x_github_delivery,
+    )

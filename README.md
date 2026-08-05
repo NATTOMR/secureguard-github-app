@@ -1,2 +1,179 @@
-# secureguard-github-app
-A production-ready GitHub App for automated security scanning, secret detection, and secure code review.
+# 🛡️ SecureGuard GitHub App
+
+[![SecureGuard CI](https://github.com/NATTOMR/secureguard-github-app/actions/workflows/ci.yml/badge.svg)](https://github.com/NATTOMR/secureguard-github-app/actions/workflows/ci.yml)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688.svg)](https://fastapi.tiangolo.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+**SecureGuard** is an enterprise-grade, open-source GitHub App built with Python & FastAPI that automatically performs **Secret Detection** and **Static Application Security Testing (SAST)** whenever code is pushed or a Pull Request is opened in your repositories.
+
+---
+
+## ✨ Features
+
+- **🔑 Dual Authentication Engine**: Built-in GitHub App RS256 JWT generator and Installation Access Token exchange service with automatic in-memory caching.
+- **🕵️ Secret Detection**: Scans for leaked AWS Keys, GitHub Tokens, JWTs, Stripe/Slack API keys, and exposed `.env` files.
+- **🔬 SAST & OWASP Top 10 Scanning**: Detects Code Injections (`eval`, `exec`), Unsafe Deserialization (`pickle.loads`), SQL Injection patterns, XSS (`innerHTML`), and weak cryptography.
+- **⚡ Dual-Engine Fallback**: Runs Semgrep CLI if installed, with a high-performance native Python pattern matching fallback.
+- **🤖 GitHub Automation**:
+  - Posts Markdown security reports as Pull Request review comments or commit status comments.
+  - Automatically creates GitHub Issues for **CRITICAL** and **HIGH** severity findings with built-in deduplication (`secureguard` label).
+- **🔒 Security First**: Masking of secrets in logs, non-root Docker execution, and safe temporary workspace cleanup.
+
+---
+
+## 🏗️ Architecture Overview
+
+```
+                        ┌────────────────────────┐
+                        │   GitHub Webhook /     │
+                        │    POST /scan          │
+                        └───────────┬────────────┘
+                                    │
+                                    v
+                        ┌────────────────────────┐
+                        │   FastAPI App Router   │
+                        └───────────┬────────────┘
+                                    │
+                                    v
+                        ┌────────────────────────┐
+                        │   ScanService          │
+                        │   Orchestrator         │
+                        └─────┬────────────┬─────┘
+                              │            │
+             ┌────────────────┘            └────────────────┐
+             v                                              v
+┌──────────────────────────┐                    ┌──────────────────────────┐
+│  GitleaksScanner         │                    │  SemgrepScanner          │
+│  (Secret Detection)      │                    │  (SAST & OWASP Top 10)   │
+└──────────────────────────┘                    └──────────────────────────┘
+             │                                              │
+             └────────────────┬─────────────────────────────┘
+                              │
+                              v
+                        ┌────────────────────────┐
+                        │ GitHubNotification     │
+                        │ Service                │
+                        ├────────────────────────┤
+                        │ ‣ ReportService        │
+                        │ ‣ CommentService       │
+                        │ ‣ IssueService         │
+                        └────────────────────────┘
+```
+
+---
+
+## 🚀 Quick Start
+
+### 1. Local Environment Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/NATTOMR/secureguard-github-app.git
+cd secureguard-github-app
+
+# Create virtual environment
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Create environment configuration
+cp .env.example .env
+```
+
+### 2. Configure Environment Variables (`.env`)
+
+```env
+APP_NAME=SecureGuard
+ENV=development
+DEBUG=True
+PORT=8000
+
+GITHUB_APP_ID=4492546
+GITHUB_CLIENT_ID=Iv23liZQ44TRV62qhhYj
+GITHUB_WEBHOOK_SECRET=your_webhook_secret_here
+GITHUB_PRIVATE_KEY_PATH=keys/private-key.pem
+```
+
+### 3. Run Application
+
+```bash
+# Start FastAPI application with Uvicorn
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+Access Swagger UI interactive docs at: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+
+---
+
+## 🐳 Running with Docker
+
+### Using Docker Compose
+
+```bash
+# Build and run the app container
+docker-compose up --build -d
+
+# View application logs
+docker-compose logs -f
+
+# Stop the container
+docker-compose down
+```
+
+### Using Standalone Docker
+
+```bash
+# Build image
+docker build -t secureguard-app .
+
+# Run container
+docker run -d -p 8000:8000 --env-file .env --name secureguard secureguard-app
+```
+
+---
+
+## 🌐 API Endpoints Reference
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/` | Root application metadata |
+| `GET` | `/health` | Application health check endpoint |
+| `GET` | `/auth/status` | GitHub App authentication configuration status |
+| `GET` | `/auth/test` | Live authentication check against GitHub API |
+| `POST` | `/scan` | Initiate a dual security scan (Secrets + SAST) and trigger GitHub automation |
+| `POST` | `/webhook` | GitHub Webhook listener endpoint |
+
+### Example Scan Request (`POST /scan`)
+
+```bash
+curl -X POST "http://127.0.0.1:8000/scan" \
+     -H "Content-Type: application/json" \
+     -d '{
+           "owner": "octocat",
+           "repo": "Hello-World",
+           "commit_sha": "7fd1a60b01f91b314f59955a4e4d4e80d8edf11d",
+           "pr_number": 42,
+           "notify_github": true
+         }'
+```
+
+---
+
+## 🧪 Running Tests
+
+```bash
+# Run pytest test suite
+python -m pytest tests/ -v
+
+# Run with test coverage report
+python -m pytest tests/ --cov=app --cov-report=term-missing
+```
+
+---
+
+## 📜 License
+
+Distributed under the MIT License. See `LICENSE` for details.
