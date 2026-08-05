@@ -242,6 +242,29 @@ Recommendation:
 Avoid shell=True.
 ```
 
+### Example GitHub Check Run Output
+
+```markdown
+Title: SecureGuard Security Scan
+Summary:
+### Repository scanned successfully.
+
+| Severity | Count |
+|----------|------:|
+| Critical | 0 |
+| High | 2 |
+| Medium | 3 |
+| Low | 1 |
+
+Text:
+## 🟠 High Findings
+**Hardcoded GitHub Token**
+- **File:** `app/config.py` (Line 18)
+- **Rule:** `github-token`
+- **Description:** Sensitive credential detected.
+- **Recommendation:** Move token into GitHub Secrets.
+```
+
 ---
 
 ## 🧪 Running Tests

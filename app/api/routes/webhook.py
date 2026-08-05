@@ -60,6 +60,18 @@ async def process_webhook_event(
             logger.info("Executing PR scan & review bot for %s/%s PR #%d (action: %s)", owner, repo, pr_number, action)
             from app.services.pr_scan_service import PRScanService
             from app.github.pr_review_service import PRReviewService
+            from app.services.check_run_service import CheckRunService
+
+            check_service = CheckRunService()
+            check_run_id = None
+            if scan_service.auth_manager and installation_id:
+                try:
+                    token = await scan_service.auth_manager.get_installation_token(installation_id)
+                    check_run_id = await check_service.checks_service.create_check_run(
+                        owner=owner, repo=repo, head_sha=commit_sha, name="SecureGuard Security Scan", token=token, status="in_progress"
+                    )
+                except Exception as ce:
+                    logger.warning("Could not initialize Check Run: %s", str(ce))
 
             pr_scan_service = PRScanService(auth_manager=scan_service.auth_manager)
             pr_review_service = PRReviewService()
@@ -77,9 +89,10 @@ async def process_webhook_event(
             if scan_service.auth_manager and installation_id:
                 try:
                     token = await scan_service.auth_manager.get_installation_token(installation_id)
+                    await check_service.publish_scan_checks(owner, repo, commit_sha, pr_result, token, check_run_id=check_run_id)
                     await pr_review_service.post_or_update_pr_comment(owner, repo, pr_number, report_md, token)
                 except Exception as pe:
-                    logger.error("Failed to post/update PR review comment on PR #%d: %s", pr_number, str(pe))
+                    logger.error("Failed to update PR checks / comment on PR #%d: %s", pr_number, str(pe))
             return
 
         if not commit_sha:
@@ -93,7 +106,25 @@ async def process_webhook_event(
             owner=owner, repo=repo, commit_sha=commit_sha, installation_id=installation_id
         )
 
-        # 2. If secrets found, create GitHub Issue
+        # 2. Execute dual scan for PR/Check runs
+        scan_result = await scan_service.execute_scan(
+            owner=owner,
+            repo=repo,
+            commit_sha=commit_sha,
+            installation_id=installation_id,
+        )
+
+        # 3. Publish Check Run
+        from app.services.check_run_service import CheckRunService
+        check_service = CheckRunService()
+        if scan_service.auth_manager and installation_id:
+            try:
+                token = await scan_service.auth_manager.get_installation_token(installation_id)
+                await check_service.publish_scan_checks(owner, repo, commit_sha, scan_result, token)
+            except Exception as ce:
+                logger.error("Failed to publish Check Run for push event: %s", str(ce))
+
+        # 4. If secrets found, create GitHub Issue
         if pipeline_report.get("findings") and len(pipeline_report["findings"]) > 0:
             from app.services.github_issue_service import GitHubIssueService
             issue_service = GitHubIssueService()
@@ -105,15 +136,7 @@ async def process_webhook_event(
                 except Exception as ie:
                     logger.error("Failed to create issue from pipeline report: %s", str(ie))
 
-        # 3. Also execute dual scan for PR comments if applicable
-        scan_result = await scan_service.execute_scan(
-            owner=owner,
-            repo=repo,
-            commit_sha=commit_sha,
-            installation_id=installation_id,
-        )
-
-        # Notify GitHub (PR comments / commit comments)
+        # 5. Notify GitHub (PR comments / commit comments)
         await notification_service.notify(
             scan_result=scan_result,
             owner=owner,
