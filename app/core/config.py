@@ -74,7 +74,12 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: Optional[str] = Field(default=None, description="OpenAI API key")
     OPENAI_MODEL: str = Field(default="gpt-4o-mini", description="OpenAI model name")
     OLLAMA_BASE_URL: str = Field(default="http://localhost:11434", description="Local Ollama base URL")
+    OLLAMA_URL: str = Field(default="http://localhost:11434", description="Ollama API URL")
     OLLAMA_MODEL: str = Field(default="llama3", description="Ollama model name")
+    GEMINI_API_KEY: Optional[str] = Field(default=None, description="Google Gemini API key")
+    CLAUDE_API_KEY: Optional[str] = Field(default=None, description="Anthropic Claude API key")
+    AZURE_OPENAI_ENDPOINT: Optional[str] = Field(default=None, description="Azure OpenAI Endpoint")
+    AZURE_OPENAI_KEY: Optional[str] = Field(default=None, description="Azure OpenAI API key")
     AI_CACHE_ENABLED: bool = Field(default=True, description="Cache AI analysis responses")
 
     @field_validator("GITHUB_APP_ID", mode="before")

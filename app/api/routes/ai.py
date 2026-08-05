@@ -107,3 +107,31 @@ async def chat_assistant(req: ChatRequest) -> Dict[str, Any]:
         "user_message": req.message,
         "assistant_reply": reply,
     }
+
+
+@router.get(
+    "/health",
+    status_code=status.HTTP_200_OK,
+    summary="AI Provider Health Check",
+    description="Returns health status and configuration status of active AI provider.",
+)
+async def get_ai_health() -> Dict[str, Any]:
+    """Get active AI provider health status."""
+    from app.ai.client import AIClient
+    client = AIClient()
+    return await client.health()
+
+
+@router.get(
+    "/providers",
+    status_code=status.HTTP_200_OK,
+    summary="List Registered AI Providers",
+    description="Lists all available registered LLM provider implementations.",
+)
+def list_ai_providers() -> Dict[str, Any]:
+    """List registered AI providers."""
+    from app.ai.providers.factory import AIProviderFactory
+    return {
+        "active_provider": AIProviderFactory.create_provider().provider_name,
+        "available_providers": AIProviderFactory.list_providers(),
+    }
