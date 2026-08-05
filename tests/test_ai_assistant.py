@@ -106,8 +106,8 @@ def test_api_ai_fix_endpoint(client):
     res = client.post("/api/ai/fix", json=payload)
     assert res.status_code == 200
     data = res.json()
-    assert "fixed_code" in data
-    assert "explanation" in data
+    assert "secure_code" in data
+    assert "reasoning" in data
 
 
 def test_api_ai_report_endpoint(client):

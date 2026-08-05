@@ -30,6 +30,7 @@ from app.ai.prompt_builder import PromptBuilder
 from app.ai.remediation_generator import RemediationGenerator
 from app.schemas.ai import AnalyzeRequest, ChatRequest, FixRequest, ReportRequest
 from app.schemas.ai_analysis import AIAnalysisResponse
+from app.schemas.ai_remediation import RemediationRequest, RemediationResponse
 
 router = APIRouter(prefix="/api/ai", tags=["AI Security Assistant"])
 
@@ -57,19 +58,23 @@ async def analyze_vulnerability(req: AnalyzeRequest) -> AIAnalysisResponse:
 
 @router.post(
     "/fix",
+    response_model=RemediationResponse,
     status_code=status.HTTP_200_OK,
     summary="AI Secure Code Fix Generator",
-    description="Generates side-by-side secure code refactoring for vulnerable snippets.",
+    description="Generates side-by-side secure code refactoring, unified git diffs, patches, and PR suggestions.",
 )
-async def generate_secure_fix(req: FixRequest) -> Dict[str, Any]:
+async def generate_secure_fix(req: RemediationRequest) -> RemediationResponse:
     """Generate secure code fix."""
-    generator = RemediationGenerator()
-    result = await generator.generate_fix(
+    from app.ai.remediation.remediation_engine import RemediationEngine
+    engine = RemediationEngine()
+    result = engine.generate_remediation(
         vulnerable_code=req.vulnerable_code,
         language=req.language,
-        rule_id=req.rule_id,
+        rule_id=req.rule_id or "security-finding",
+        filename=req.filename or "vulnerable.py",
+        severity=req.severity or "HIGH",
     )
-    return result
+    return RemediationResponse(**result)
 
 
 @router.post(
