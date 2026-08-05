@@ -3,102 +3,214 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SecureGuard Security Dashboard</title>
+  <title>SecureGuard — Enterprise Security Platform</title>
   <link rel="stylesheet" href="/static/css/dashboard.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Google Fonts & FontAwesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
-  <!-- Sidebar -->
+  <!-- Left Enterprise Sidebar -->
   <aside class="sidebar">
     <div class="brand">
-      <i class="fa-solid fa-shield-halved" style="color: #06b6d4;"></i>
+      <div class="brand-icon"><i class="fa-solid fa-shield-halved"></i></div>
       <span>SecureGuard</span>
     </div>
+
+    <div class="nav-section-title">Core Modules</div>
     <ul class="nav-menu">
-      <li class="nav-item active"><a href="#"><i class="fa-solid fa-chart-line"></i> Overview</a></li>
-      <li class="nav-item"><a href="#repositories"><i class="fa-solid fa-folder-tree"></i> Repositories</a></li>
-      <li class="nav-item"><a href="#scans"><i class="fa-solid fa-microscope"></i> Scan History</a></li>
-      <li class="nav-item"><a href="#findings"><i class="fa-solid fa-bug"></i> Findings</a></li>
-      <li class="nav-item"><a href="#integrations"><i class="fa-solid fa-network-wired"></i> SOC Integrations</a></li>
-      <li class="nav-item"><a href="#events"><i class="fa-solid fa-receipt"></i> Webhook Audit</a></li>
+      <li class="nav-item active" data-tab="dashboard-view"><a href="#dashboard"><i class="fa-solid fa-chart-pie"></i> <span>Dashboard</span></a></li>
+      <li class="nav-item" data-tab="repositories-view"><a href="#repositories"><i class="fa-solid fa-folder-tree"></i> <span>Repositories</span></a></li>
+      <li class="nav-item" data-tab="scans-view"><a href="#scans"><i class="fa-solid fa-microscope"></i> <span>Security Scans</span></a></li>
+      <li class="nav-item" data-tab="findings-view"><a href="#findings"><i class="fa-solid fa-bug"></i> <span>Vulnerabilities</span></a></li>
     </ul>
+
+    <div class="nav-section-title">Enterprise Ops</div>
+    <ul class="nav-menu">
+      <li class="nav-item" data-tab="ai-view"><a href="#ai"><i class="fa-solid fa-brain"></i> <span>AI Security Hub</span></a></li>
+      <li class="nav-item" data-tab="soc-view"><a href="#soc"><i class="fa-solid fa-network-wired"></i> <span>SOC Platform</span></a></li>
+      <li class="nav-item" data-tab="issues-view"><a href="#issues"><i class="fa-solid fa-circle-exclamation"></i> <span>GitHub Issues</span></a></li>
+      <li class="nav-item" data-tab="reports-view"><a href="#reports"><i class="fa-solid fa-file-pdf"></i> <span>Reports & Exports</span></a></li>
+      <li class="nav-item" data-tab="settings-view"><a href="#settings"><i class="fa-solid fa-sliders"></i> <span>Settings</span></a></li>
+    </ul>
+
+    <div class="sidebar-footer">
+      <div class="status-indicator">
+        <div class="pulse-dot"></div> ONLINE
+      </div>
+      <span style="color: var(--text-dim); font-size: 0.75rem;">v0.1.0 Enterprise</span>
+    </div>
   </aside>
 
   <!-- Main Content Wrapper -->
   <div class="main-wrapper">
-    <!-- Header -->
+    
+    <!-- Top Navigation Bar -->
     <header class="header-bar">
-      <h2>Enterprise Security Dashboard</h2>
-      <div class="search-box">
-        <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: #94a3b8;"></i>
-        <input type="text" id="global-search" placeholder="Search repository, rule, file...">
+      <div class="header-title">
+        <h2 id="current-page-title">Dashboard Overview</h2>
+        <span class="badge badge-info" style="font-size: 0.7rem;">GitHub App Active</span>
+      </div>
+
+      <div class="header-actions">
+        <!-- Global Search Bar -->
+        <div class="search-box">
+          <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
+          <input type="text" id="global-search" placeholder="Search repository, rule, file, scan ID...">
+        </div>
+
+        <!-- Notifications -->
+        <button class="btn btn-secondary" style="padding: 0.5rem 0.75rem; border-radius: 50%;" title="Notifications" onclick="alert('System Notifications: All services operating normally.')">
+          <i class="fa-solid fa-bell"></i>
+        </button>
+
+        <!-- User Profile Avatar -->
+        <div class="user-profile" onclick="switchTab('settings-view')">
+          <div class="avatar">SG</div>
+          <div style="display: flex; flex-direction: column;">
+            <span style="font-weight: 700; font-size: 0.85rem;">NATTOMR</span>
+            <span style="font-size: 0.7rem; color: var(--text-muted);">Admin</span>
+          </div>
+        </div>
       </div>
     </header>
 
     <!-- Content Area -->
     <main class="content-area">
-      <!-- Metric Cards Grid -->
-      <div class="cards-grid">
-        <div class="metric-card">
-          <div class="card-title">Repositories</div>
-          <div class="card-value" id="val-repos">0</div>
-        </div>
-        <div class="metric-card">
-          <div class="card-title">Total Scans</div>
-          <div class="card-value" id="val-scans">0</div>
-        </div>
-        <div class="metric-card" style="border-left: 4px solid var(--sev-critical);">
-          <div class="card-title">Critical Findings</div>
-          <div class="card-value" id="val-critical" style="color: var(--sev-critical);">0</div>
-        </div>
-        <div class="metric-card" style="border-left: 4px solid var(--sev-high);">
-          <div class="card-title">High Findings</div>
-          <div class="card-value" id="val-high" style="color: var(--sev-high);">0</div>
-        </div>
-        <div class="metric-card" style="border-left: 4px solid var(--sev-medium);">
-          <div class="card-title">Medium Findings</div>
-          <div class="card-value" id="val-medium" style="color: var(--sev-medium);">0</div>
-        </div>
-        <div class="metric-card" style="border-left: 4px solid var(--sev-low);">
-          <div class="card-title">Low / Info</div>
-          <div class="card-value" id="val-low" style="color: var(--sev-low);">0</div>
-        </div>
-      </div>
 
-      <!-- Charts Section -->
-      <div class="charts-grid">
-        <div class="panel-card">
-          <div class="panel-header">
-            <div class="panel-title">Findings Trend & Distribution</div>
+      <!-- ===================================================================
+           1. DASHBOARD OVERVIEW VIEW
+           =================================================================== -->
+      <section id="dashboard-view" class="tab-view active">
+        <!-- Metric Statistics Cards -->
+        <div class="metrics-grid">
+          <div class="metric-stat-card">
+            <span class="stat-label">Repositories</span>
+            <span class="stat-value" id="dash-val-repos">0</span>
           </div>
-          <canvas id="trendChart" height="120"></canvas>
-        </div>
-        <div class="panel-card">
-          <div class="panel-header">
-            <div class="panel-title">Scanner Breakdown</div>
+          <div class="metric-stat-card">
+            <span class="stat-label">Total Scans</span>
+            <span class="stat-value" id="dash-val-scans">0</span>
           </div>
-          <canvas id="scannerChart" height="180"></canvas>
+          <div class="metric-stat-card critical">
+            <span class="stat-label">Critical Issues</span>
+            <span class="stat-value" id="dash-val-critical" style="color: var(--sev-critical);">0</span>
+          </div>
+          <div class="metric-stat-card high">
+            <span class="stat-label">High Issues</span>
+            <span class="stat-value" id="dash-val-high" style="color: var(--sev-high);">0</span>
+          </div>
+          <div class="metric-stat-card medium">
+            <span class="stat-label">Medium Issues</span>
+            <span class="stat-value" id="dash-val-medium" style="color: var(--sev-medium);">0</span>
+          </div>
+          <div class="metric-stat-card low">
+            <span class="stat-label">Low / Info</span>
+            <span class="stat-value" id="dash-val-low" style="color: var(--sev-low);">0</span>
+          </div>
         </div>
-      </div>
 
-      <!-- Installed Repositories Grid -->
-      <div class="panel-card" id="repositories">
-        <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-          <div class="panel-title">Installed GitHub Repositories</div>
-          <div style="display: flex; gap: 0.5rem; align-items: center;">
-            <input type="text" id="repo-search" placeholder="Filter repositories..." style="background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); padding: 0.4rem 0.8rem; border-radius: 4px; font-size: 0.85rem;">
-            <select id="repo-vis-filter" style="background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); padding: 0.4rem 0.8rem; border-radius: 4px; font-size: 0.85rem;">
-              <option value="">All Visibility</option>
-              <option value="public">Public</option>
-              <option value="private">Private</option>
-            </select>
-            <button onclick="triggerRepoSync()" style="background: var(--accent-blue); color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 4px; cursor: pointer; font-size: 0.85rem; font-weight: 600;">
-              <i class="fa-solid fa-rotate"></i> Sync Repos
-            </button>
+        <!-- Charts Grid -->
+        <div class="card-grid" style="grid-template-columns: 2fr 1fr;">
+          <div class="enterprise-card">
+            <div class="card-banner-header">
+              <div class="card-banner-title">
+                <div class="card-banner-icon"><i class="fa-solid fa-chart-line"></i></div>
+                Security Findings Trend (12 Weeks)
+              </div>
+            </div>
+            <div class="card-body">
+              <canvas id="trendChart" height="140"></canvas>
+            </div>
+          </div>
+
+          <div class="enterprise-card">
+            <div class="card-banner-header">
+              <div class="card-banner-title">
+                <div class="card-banner-icon"><i class="fa-solid fa-chart-pie"></i></div>
+                Scanner Distribution
+              </div>
+            </div>
+            <div class="card-body">
+              <canvas id="scannerChart" height="200"></canvas>
+            </div>
           </div>
         </div>
+
+        <!-- Quick Module Navigation Cards Grid -->
+        <div class="card-grid">
+          <div class="enterprise-card">
+            <div class="card-banner-header">
+              <div class="card-banner-title">
+                <div class="card-banner-icon"><i class="fa-solid fa-brain"></i></div>
+                AI Security Assistant
+              </div>
+            </div>
+            <div class="card-body">
+              <p class="card-description">Automated AI vulnerability analysis, CVSS/OWASP mapping, and patch-ready secure code remediation.</p>
+            </div>
+            <div class="card-footer">
+              <button class="btn btn-primary" onclick="switchTab('ai-view')">Open Hub <i class="fa-solid fa-arrow-right"></i></button>
+            </div>
+          </div>
+
+          <div class="enterprise-card">
+            <div class="card-banner-header">
+              <div class="card-banner-title">
+                <div class="card-banner-icon"><i class="fa-solid fa-network-wired"></i></div>
+                SOC Platform Integrations
+              </div>
+            </div>
+            <div class="card-body">
+              <p class="card-description">Forward security alerts to Wazuh, Splunk HEC, Azure Sentinel, Elastic Security, TheHive, and MISP.</p>
+            </div>
+            <div class="card-footer">
+              <button class="btn btn-primary" onclick="switchTab('soc-view')">Manage Connectors <i class="fa-solid fa-arrow-right"></i></button>
+            </div>
+          </div>
+
+          <div class="enterprise-card">
+            <div class="card-banner-header">
+              <div class="card-banner-title">
+                <div class="card-banner-icon"><i class="fa-solid fa-file-pdf"></i></div>
+                Executive Security Reports
+              </div>
+            </div>
+            <div class="card-body">
+              <p class="card-description">Generate downloadable CISO Executive PDF reports, SARIF 2.1.0 files, and standalone HTML dashboards.</p>
+            </div>
+            <div class="card-footer">
+              <button class="btn btn-primary" onclick="switchTab('reports-view')">Export Reports <i class="fa-solid fa-arrow-right"></i></button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================================================================
+           2. REPOSITORIES VIEW
+           =================================================================== -->
+      <section id="repositories-view" class="tab-view">
+        <div class="view-header">
+          <div>
+            <h3>Enterprise Repository Discovery</h3>
+            <p>Monitored GitHub repositories discovered via GitHub App Installation token.</p>
+          </div>
+          <div style="display: flex; gap: 0.75rem;">
+            <button class="btn btn-secondary" onclick="triggerRepoSync()"><i class="fa-solid fa-rotate"></i> Sync Repositories</button>
+          </div>
+        </div>
+
+        <!-- Filter Controls -->
+        <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+          <input type="text" id="repo-search" class="search-box" placeholder="Filter repositories..." style="width: 250px; padding: 0.5rem 1rem; background: var(--bg-card); border: 1px solid var(--border-color); color: white; border-radius: var(--radius-md);">
+          <select id="repo-vis-filter" style="padding: 0.5rem 1rem; background: var(--bg-card); border: 1px solid var(--border-color); color: white; border-radius: var(--radius-md);">
+            <option value="">All Visibility</option>
+            <option value="public">Public</option>
+            <option value="private">Private</option>
+          </select>
+        </div>
+
         <div class="table-container">
           <table>
             <thead>
@@ -117,101 +229,423 @@
               </tr>
             </thead>
             <tbody id="repo-table-body">
-              <tr><td colspan="11" style="text-align: center; color: var(--text-muted);">Loading discovered repositories...</td></tr>
+              <tr><td colspan="11" style="text-align: center; color: var(--text-muted);">Loading repositories...</td></tr>
             </tbody>
           </table>
         </div>
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; color: var(--text-muted); font-size: 0.85rem;">
-          <span id="repo-pagination-info">Showing 0 repositories</span>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; color: var(--text-muted); font-size: 0.85rem;">
+          <span id="repo-pagination-info">Showing repositories</span>
           <div style="display: flex; gap: 0.5rem;">
-            <button id="repo-btn-prev" onclick="changeRepoPage(-1)" disabled style="background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); padding: 0.25rem 0.6rem; border-radius: 4px; cursor: pointer;">Prev</button>
-            <button id="repo-btn-next" onclick="changeRepoPage(1)" disabled style="background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); padding: 0.25rem 0.6rem; border-radius: 4px; cursor: pointer;">Next</button>
+            <button id="repo-btn-prev" class="btn btn-secondary" onclick="changeRepoPage(-1)" disabled>Prev</button>
+            <button id="repo-btn-next" class="btn btn-secondary" onclick="changeRepoPage(1)" disabled>Next</button>
           </div>
         </div>
-      </div>
+      </section>
 
-      <!-- SOC Integrations Grid -->
-      <div class="panel-card" id="integrations">
-        <div class="panel-header">
-          <div class="panel-title">Enterprise SOC & Notification Integrations</div>
+      <!-- ===================================================================
+           3. SECURITY SCANS VIEW
+           =================================================================== -->
+      <section id="scans-view" class="tab-view">
+        <div class="view-header">
+          <div>
+            <h3>Security Scan Orchestration</h3>
+            <p>Trigger dual security scans (Secrets + SAST) and view scan history.</p>
+          </div>
         </div>
+
+        <!-- Trigger Scan Card -->
+        <div class="enterprise-card">
+          <div class="card-banner-header">
+            <div class="card-banner-title">
+              <div class="card-banner-icon"><i class="fa-solid fa-play"></i></div>
+              Trigger New Security Scan
+            </div>
+          </div>
+          <div class="card-body">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
+              <div>
+                <label style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 0.3rem;">Repository Owner</label>
+                <input type="text" id="scan-owner" value="NATTOMR" style="width: 100%; padding: 0.5rem; background: #090d16; border: 1px solid var(--border-color); color: white; border-radius: 4px;">
+              </div>
+              <div>
+                <label style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 0.3rem;">Repository Name</label>
+                <input type="text" id="scan-repo" value="secureguard-github-app" style="width: 100%; padding: 0.5rem; background: #090d16; border: 1px solid var(--border-color); color: white; border-radius: 4px;">
+              </div>
+              <div>
+                <label style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 0.3rem;">Commit SHA / Branch</label>
+                <input type="text" id="scan-commit" value="main" style="width: 100%; padding: 0.5rem; background: #090d16; border: 1px solid var(--border-color); color: white; border-radius: 4px;">
+              </div>
+            </div>
+          </div>
+          <div class="card-footer">
+            <button class="btn btn-primary" onclick="triggerManualScan()"><i class="fa-solid fa-bolt"></i> Initiate Security Scan</button>
+          </div>
+        </div>
+
+        <!-- Scan History Table -->
         <div class="table-container">
           <table>
             <thead>
               <tr>
-                <th>Platform / Connector</th>
-                <th>Category</th>
-                <th>Status</th>
-                <th>Health</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody id="soc-table-body">
-              <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Loading SOC connectors status...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Recent Scans Table -->
-      <div class="panel-card" id="scans">
-        <div class="panel-header">
-          <div class="panel-title">Latest Security Scans</div>
-        </div>
-        <div class="table-container">
-          <table>
-            <thead>
-              <tr>
+                <th>Scan ID</th>
                 <th>Repository</th>
                 <th>Commit</th>
                 <th>Branch</th>
                 <th>Status</th>
-                <th>Issues</th>
-                <th>Date</th>
+                <th>Findings</th>
+                <th>Timestamp</th>
               </tr>
             </thead>
             <tbody id="scan-table-body">
-              <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Loading scans data...</td></tr>
+              <tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Loading scan history...</td></tr>
             </tbody>
           </table>
         </div>
-      </div>
+      </section>
 
-      <!-- Audit Log Table -->
-      <div class="panel-card" id="events">
-        <div class="panel-header">
-          <div class="panel-title">Recent Webhook Deliveries</div>
+      <!-- ===================================================================
+           4. VULNERABILITIES / FINDINGS VIEW
+           =================================================================== -->
+      <section id="findings-view" class="tab-view">
+        <div class="view-header">
+          <div>
+            <h3>Vulnerability Findings</h3>
+            <p>Filterable findings detected across secrets detection and SAST scanners.</p>
+          </div>
         </div>
+
+        <!-- Filter Controls -->
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+          <select id="finding-sev-filter" onchange="loadFindings()" style="padding: 0.5rem 1rem; background: var(--bg-card); border: 1px solid var(--border-color); color: white; border-radius: var(--radius-md);">
+            <option value="">All Severities</option>
+            <option value="CRITICAL">Critical</option>
+            <option value="HIGH">High</option>
+            <option value="MEDIUM">Medium</option>
+            <option value="LOW">Low</option>
+          </select>
+          <select id="finding-scanner-filter" onchange="loadFindings()" style="padding: 0.5rem 1rem; background: var(--bg-card); border: 1px solid var(--border-color); color: white; border-radius: var(--radius-md);">
+            <option value="">All Scanners</option>
+            <option value="Gitleaks">Gitleaks (Secrets)</option>
+            <option value="Semgrep">Semgrep (SAST)</option>
+          </select>
+        </div>
+
         <div class="table-container">
           <table>
             <thead>
               <tr>
-                <th>Event</th>
-                <th>Delivery ID</th>
-                <th>Timestamp</th>
+                <th>Severity</th>
+                <th>Title / Rule</th>
+                <th>File & Line</th>
+                <th>Scanner</th>
+                <th>CWE / OWASP</th>
+                <th>Action</th>
               </tr>
             </thead>
-            <tbody id="event-table-body">
-              <tr><td colspan="3" style="text-align: center; color: var(--text-muted);">Loading event log...</td></tr>
+            <tbody id="findings-table-body">
+              <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Loading vulnerability findings...</td></tr>
             </tbody>
           </table>
         </div>
-      </div>
+      </section>
+
+      <!-- ===================================================================
+           5. AI SECURITY HUB VIEW
+           =================================================================== -->
+      <section id="ai-view" class="tab-view">
+        <div class="view-header">
+          <div>
+            <h3>AI Vulnerability Analysis & Remediation Engine</h3>
+            <p>Generative AI secure code remediation, attack vectors, and CISO reports.</p>
+          </div>
+        </div>
+
+        <!-- 4 Action Cards -->
+        <div class="card-grid">
+          <div class="enterprise-card">
+            <div class="card-banner-header">
+              <div class="card-banner-title">
+                <div class="card-banner-icon"><i class="fa-solid fa-microchip"></i></div>
+                Analyze Vulnerability
+              </div>
+            </div>
+            <div class="card-body">
+              <p class="card-description">Deep architectural vulnerability assessment, CVSS calculation, OWASP category mapping, and attack vector analysis.</p>
+            </div>
+            <div class="card-footer">
+              <button class="btn btn-secondary" onclick="setAITask('analyze')">Select</button>
+            </div>
+          </div>
+
+          <div class="enterprise-card">
+            <div class="card-banner-header">
+              <div class="card-banner-title">
+                <div class="card-banner-icon"><i class="fa-solid fa-code"></i></div>
+                Generate Secure Fix
+              </div>
+            </div>
+            <div class="card-body">
+              <p class="card-description">Generate patch-ready secure code replacement for Python, JS, TS, Go, Java, Dockerfile, and Terraform.</p>
+            </div>
+            <div class="card-footer">
+              <button class="btn btn-secondary" onclick="setAITask('fix')">Select</button>
+            </div>
+          </div>
+
+          <div class="enterprise-card">
+            <div class="card-banner-header">
+              <div class="card-banner-title">
+                <div class="card-banner-icon"><i class="fa-solid fa-file-contract"></i></div>
+                CISO Executive Report
+              </div>
+            </div>
+            <div class="card-body">
+              <p class="card-description">Synthesize executive summary, business impact score, compliance mapping (PCI-DSS, SOC2, ISO27001), and remediation plan.</p>
+            </div>
+            <div class="card-footer">
+              <button class="btn btn-secondary" onclick="setAITask('report')">Select</button>
+            </div>
+          </div>
+
+          <div class="enterprise-card">
+            <div class="card-banner-header">
+              <div class="card-banner-title">
+                <div class="card-banner-icon"><i class="fa-solid fa-comments"></i></div>
+                AI Security Chat
+              </div>
+            </div>
+            <div class="card-body">
+              <p class="card-description">Interactive chat assistant for inquiring about threat detection rules, secure coding guidelines, and remediation strategy.</p>
+            </div>
+            <div class="card-footer">
+              <button class="btn btn-secondary" onclick="setAITask('chat')">Select</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Interactive AI Prompt Workspace -->
+        <div class="enterprise-card">
+          <div class="card-banner-header">
+            <div class="card-banner-title">
+              <div class="card-banner-icon"><i class="fa-solid fa-terminal"></i></div>
+              <span id="ai-task-title">AI Remediation Workspace</span>
+            </div>
+            <select id="ai-language-select" style="background: var(--bg-dark); border: 1px solid var(--border-color); color: white; padding: 0.3rem 0.6rem; border-radius: 4px;">
+              <option value="python">Python</option>
+              <option value="javascript">JavaScript</option>
+              <option value="typescript">TypeScript</option>
+              <option value="go">Go</option>
+              <option value="java">Java</option>
+              <option value="dockerfile">Dockerfile</option>
+              <option value="terraform">Terraform</option>
+            </select>
+          </div>
+          <div class="card-body">
+            <textarea id="ai-prompt-input" class="prompt-input" placeholder="Paste vulnerable code or security prompt here..."></textarea>
+            <div style="display: flex; justify-content: flex-end;">
+              <button class="btn btn-primary" onclick="runAIEngine()"><i class="fa-solid fa-wand-magic-sparkles"></i> Run AI Engine</button>
+            </div>
+            <div id="ai-output-container" class="code-block" style="min-height: 120px; display: none;">
+              <div style="color: var(--primary-400); font-weight: 700; margin-bottom: 0.5rem;">AI Response:</div>
+              <pre id="ai-output-text"></pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================================================================
+           6. SOC INTEGRATIONS VIEW
+           =================================================================== -->
+      <section id="soc-view" class="tab-view">
+        <div class="view-header">
+          <div>
+            <h3>Enterprise SOC & SIEM Connectors</h3>
+            <p>Forward security findings into SIEM, SOAR, Threat Intel, and notification channels.</p>
+          </div>
+        </div>
+
+        <div class="soc-grid" id="soc-cards-container">
+          <!-- Populated by JavaScript -->
+        </div>
+      </section>
+
+      <!-- ===================================================================
+           7. GITHUB ISSUES VIEW
+           =================================================================== -->
+      <section id="issues-view" class="tab-view">
+        <div class="view-header">
+          <div>
+            <h3>GitHub Issue Automation</h3>
+            <p>Automated GitHub issue tracking for Critical and High severity vulnerabilities.</p>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Issue ID</th>
+                <th>Finding ID</th>
+                <th>Issue Number</th>
+                <th>Issue URL</th>
+                <th>Status</th>
+                <th>Created At</th>
+              </tr>
+            </thead>
+            <tbody id="issues-table-body">
+              <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Loading GitHub issue records...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===================================================================
+           8. REPORTS VIEW
+           =================================================================== -->
+      <section id="reports-view" class="tab-view">
+        <div class="view-header">
+          <div>
+            <h3>Reports & Compliance Exports</h3>
+            <p>Export scan reports for CISO executive reviews and GitHub Code Scanning.</p>
+          </div>
+        </div>
+
+        <div class="card-grid">
+          <div class="enterprise-card">
+            <div class="card-banner-header">
+              <div class="card-banner-title">
+                <div class="card-banner-icon"><i class="fa-solid fa-file-code"></i></div>
+                SARIF 2.1.0 JSON Export
+              </div>
+            </div>
+            <div class="card-body">
+              <p class="card-description">OASIS standard SARIF 2.1.0 format compatible with GitHub Code Scanning API and SonarQube.</p>
+            </div>
+            <div class="card-footer">
+              <a href="/api/export/sarif/latest" target="_blank" class="btn btn-primary"><i class="fa-solid fa-download"></i> Download SARIF</a>
+            </div>
+          </div>
+
+          <div class="enterprise-card">
+            <div class="card-banner-header">
+              <div class="card-banner-title">
+                <div class="card-banner-icon"><i class="fa-solid fa-file-pdf"></i></div>
+                Executive PDF Report
+              </div>
+            </div>
+            <div class="card-body">
+              <p class="card-description">Download executive PDF security report formatted with charts, executive summary, and severity tables.</p>
+            </div>
+            <div class="card-footer">
+              <a href="/api/export/pdf/latest" target="_blank" class="btn btn-primary"><i class="fa-solid fa-download"></i> Download PDF</a>
+            </div>
+          </div>
+
+          <div class="enterprise-card">
+            <div class="card-banner-header">
+              <div class="card-banner-title">
+                <div class="card-banner-icon"><i class="fa-solid fa-globe"></i></div>
+                Standalone HTML Report
+              </div>
+            </div>
+            <div class="card-body">
+              <p class="card-description">Download responsive HTML security dashboard page suitable for offline distribution.</p>
+            </div>
+            <div class="card-footer">
+              <a href="/api/export/html/latest" target="_blank" class="btn btn-primary"><i class="fa-solid fa-download"></i> Download HTML</a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================================================================
+           9. SETTINGS VIEW
+           =================================================================== -->
+      <section id="settings-view" class="tab-view">
+        <div class="view-header">
+          <div>
+            <h3>Platform Settings & Configuration</h3>
+            <p>GitHub App installation state, active scanner versions, and configuration flags.</p>
+          </div>
+        </div>
+
+        <div class="enterprise-card">
+          <div class="card-banner-header">
+            <div class="card-banner-title">
+              <div class="card-banner-icon"><i class="fa-solid fa-gear"></i></div>
+              GitHub App Configuration
+            </div>
+          </div>
+          <div class="card-body">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; font-size: 0.9rem;">
+              <div><strong>App Name:</strong> SecureGuard</div>
+              <div><strong>App ID:</strong> 4492546</div>
+              <div><strong>Installation ID:</strong> 151376506</div>
+              <div><strong>Environment:</strong> Development</div>
+              <div><strong>Scanners Active:</strong> Gitleaks, Semgrep</div>
+              <div><strong>AI Provider:</strong> Gemini Flash</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
     </main>
   </div>
 
+  <!-- JavaScript Single Page Application Controller -->
   <script>
+    let currentRepoPage = 1;
+    let selectedAITask = 'fix';
+
+    // Tab Navigation Switcher
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-view').forEach(view => view.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+
+      const targetView = document.getElementById(tabId);
+      if (targetView) targetView.classList.add('active');
+
+      const navItem = document.querySelector(`.nav-item[data-tab="${tabId}"]`);
+      if (navItem) navItem.classList.add('active');
+
+      // Update Top Header Title
+      const titles = {
+        'dashboard-view': 'Dashboard Overview',
+        'repositories-view': 'Enterprise Repository Discovery',
+        'scans-view': 'Security Scan Orchestration',
+        'findings-view': 'Vulnerability Findings',
+        'ai-view': 'AI Security Assistant',
+        'soc-view': 'Enterprise SOC & SIEM Connectors',
+        'issues-view': 'GitHub Issue Automation',
+        'reports-view': 'Reports & Compliance Exports',
+        'settings-view': 'Platform Settings'
+      };
+      document.getElementById('current-page-title').innerText = titles[tabId] || 'Dashboard';
+    }
+
+    // Attach click listeners to sidebar nav items
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const tabId = item.getAttribute('data-tab');
+        if (tabId) switchTab(tabId);
+      });
+    });
+
+    // ------------------------------------------------------------------
+    // Dashboard Data Loaders
+    // ------------------------------------------------------------------
     async function loadDashboard() {
       try {
         const res = await fetch('/api/dashboard');
         const data = await res.json();
 
-        document.getElementById('val-repos').innerText = data.total_repositories;
-        document.getElementById('val-scans').innerText = data.total_scans;
-        document.getElementById('val-critical').innerText = data.critical_findings;
-        document.getElementById('val-high').innerText = data.high_findings;
-        document.getElementById('val-medium').innerText = data.medium_findings;
-        document.getElementById('val-low').innerText = data.low_findings;
+        document.getElementById('dash-val-repos').innerText = data.total_repositories;
+        document.getElementById('dash-val-scans').innerText = data.total_scans;
+        document.getElementById('dash-val-critical').innerText = data.critical_findings;
+        document.getElementById('dash-val-high').innerText = data.high_findings;
+        document.getElementById('dash-val-medium').innerText = data.medium_findings;
+        document.getElementById('dash-val-low').innerText = data.low_findings;
 
         // Render Scanner Doughnut Chart
         new Chart(document.getElementById('scannerChart'), {
@@ -220,7 +654,7 @@
             labels: ['Gitleaks (Secrets)', 'Semgrep (SAST)'],
             datasets: [{
               data: [data.secrets_count, data.sast_count],
-              backgroundColor: ['#06b6d4', '#3b82f6']
+              backgroundColor: ['#3b82f6', '#60a5fa']
             }]
           },
           options: { plugins: { legend: { labels: { color: '#94a3b8' } } } }
@@ -232,9 +666,9 @@
           data: {
             labels: ['Critical', 'High', 'Medium', 'Low'],
             datasets: [{
-              label: 'Findings Severity Count',
+              label: 'Findings Count',
               data: [data.critical_findings, data.high_findings, data.medium_findings, data.low_findings],
-              backgroundColor: ['#ef4444', '#f97316', '#eab308', '#3b82f6']
+              backgroundColor: ['#ef4444', '#f97316', '#eab308', '#22c55e']
             }]
           },
           options: {
@@ -246,44 +680,14 @@
           }
         });
 
-        // Load SOC Integrations
-        try {
-          const socRes = await fetch('/api/integrations/status');
-          const socData = await socRes.json();
-          const socBody = document.getElementById('soc-table-body');
-          const categoryMap = {
-            wazuh: 'SIEM', splunk: 'SIEM', elastic: 'SIEM', sentinel: 'SIEM',
-            thehive: 'SOAR', misp: 'Threat Intel',
-            slack: 'Notification', teams: 'Notification', discord: 'Notification'
-          };
-
-          socBody.innerHTML = Object.keys(socData).map(k => {
-            const item = socData[k];
-            const isEnabled = item.enabled;
-            const health = item.health || 'unknown';
-            const cat = categoryMap[k] || 'Integration';
-
-            return `
-              <tr>
-                <td><strong>${k.toUpperCase()}</strong></td>
-                <td><span class="badge badge-low">${cat}</span></td>
-                <td><span class="badge badge-${isEnabled ? 'low' : 'medium'}">${isEnabled ? 'ENABLED' : 'DISABLED'}</span></td>
-                <td><span class="badge badge-${health === 'healthy' || health === 'configured' ? 'low' : 'critical'}">${health}</span></td>
-                <td><button onclick="testIntegration('${k}')" style="background: var(--accent-blue); color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer;">Test</button></td>
-              </tr>
-            `;
-          }).join('');
-        } catch (e) {
-          console.error('Error loading SOC status:', e);
-        }
-
-        // Render Scans Table
-        const tbody = document.getElementById('scan-table-body');
+        // Scans Table
+        const sBody = document.getElementById('scan-table-body');
         if (data.latest_scans.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No scans executed yet.</td></tr>';
+          sBody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">No scans executed yet.</td></tr>';
         } else {
-          tbody.innerHTML = data.latest_scans.map(s => `
+          sBody.innerHTML = data.latest_scans.map(s => `
             <tr>
+              <td><code>${s.id.slice(0, 8)}...</code></td>
               <td><strong>${s.repo}</strong></td>
               <td><code>${s.commit}</code></td>
               <td>${s.branch}</td>
@@ -294,22 +698,187 @@
           `).join('');
         }
 
-        // Render Events Table
-        const evBody = document.getElementById('event-table-body');
-        if (data.recent_events.length === 0) {
-          evBody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--text-muted);">No webhook events recorded yet.</td></tr>';
-        } else {
-          evBody.innerHTML = data.recent_events.map(e => `
-            <tr>
-              <td><code>${e.event}</code></td>
-              <td>${e.delivery_id || 'N/A'}</td>
-              <td>${new Date(e.created_at).toLocaleString()}</td>
-            </tr>
-          `).join('');
+      } catch (err) {
+        console.error('Error loading dashboard overview:', err);
+      }
+    }
+
+    // Load Repositories Table
+    async function loadRepositories() {
+      try {
+        const search = document.getElementById('repo-search').value;
+        const vis = document.getElementById('repo-vis-filter').value;
+        let url = `/api/repositories?page=${currentRepoPage}&page_size=10`;
+        if (search) url += `&search=${encodeURIComponent(search)}`;
+        if (vis) url += `&visibility=${encodeURIComponent(vis)}`;
+
+        const res = await fetch(url);
+        const data = await res.json();
+        const tbody = document.getElementById('repo-table-body');
+
+        if (!data.repositories || data.repositories.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="11" style="text-align: center; color: var(--text-muted);">No repositories found.</td></tr>';
+          document.getElementById('repo-pagination-info').innerText = 'Showing 0 of 0 repositories';
+          return;
         }
 
+        tbody.innerHTML = data.repositories.map(r => `
+          <tr>
+            <td><strong><a href="${r.html_url}" target="_blank" style="color: var(--primary-400); text-decoration: none;">${r.full_name}</a></strong></td>
+            <td><span class="badge badge-${r.private ? 'medium' : 'low'}">${r.visibility.toUpperCase()}</span></td>
+            <td><code>${r.language || 'Unknown'}</code></td>
+            <td>${r.default_branch}</td>
+            <td>${r.last_push ? new Date(r.last_push).toLocaleDateString() : 'N/A'}</td>
+            <td><span class="badge badge-${r.latest_scan ? 'low' : 'medium'}">${r.latest_scan ? r.latest_scan.status : 'Never'}</span></td>
+            <td><span class="badge badge-critical">${r.finding_counts.critical}</span></td>
+            <td><span class="badge badge-high">${r.finding_counts.high}</span></td>
+            <td><span class="badge badge-medium">${r.finding_counts.medium}</span></td>
+            <td><span class="badge badge-low">${r.finding_counts.low}</span></td>
+            <td><button class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="viewRepoDetails('${r.owner}', '${r.name}')">Details</button></td>
+          </tr>
+        `).join('');
+
+        document.getElementById('repo-pagination-info').innerText = `Page ${data.page} of ${data.total_pages} (${data.total} total repos)`;
+        document.getElementById('repo-btn-prev').disabled = data.page <= 1;
+        document.getElementById('repo-btn-next').disabled = data.page >= data.total_pages;
+
       } catch (err) {
-        console.error('Error loading dashboard data:', err);
+        console.error('Error loading repositories:', err);
+      }
+    }
+
+    // Load Vulnerability Findings Table
+    async function loadFindings() {
+      try {
+        const sev = document.getElementById('finding-sev-filter').value;
+        const sc = document.getElementById('finding-scanner-filter').value;
+        let url = '/api/findings?limit=50';
+        if (sev) url += `&severity=${sev}`;
+        if (sc) url += `&scanner=${sc}`;
+
+        const res = await fetch(url);
+        const data = await res.json();
+        const tbody = document.getElementById('findings-table-body');
+
+        if (data.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No security findings match filters.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = data.map(f => `
+          <tr>
+            <td><span class="badge badge-${f.severity.toLowerCase()}">${f.severity}</span></td>
+            <td><strong>${f.title}</strong><br><span style="font-size: 0.75rem; color: var(--text-muted);">${f.rule}</span></td>
+            <td><code>${f.file}${f.line ? ':' + f.line : ''}</code></td>
+            <td><span class="badge badge-info">${f.scanner}</span></td>
+            <td><span style="font-size: 0.75rem; color: var(--primary-400);">${f.cwe || 'CWE'} / ${f.owasp || 'OWASP'}</span></td>
+            <td>
+              <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="sendToAI('${f.title}', '${f.file}')"><i class="fa-solid fa-wand-magic-sparkles"></i> AI Fix</button>
+            </td>
+          </tr>
+        `).join('');
+
+      } catch (err) {
+        console.error('Error loading findings:', err);
+      }
+    }
+
+    // Load SOC Cards
+    async function loadSOCCards() {
+      try {
+        const res = await fetch('/api/integrations/status');
+        const data = await res.json();
+        const container = document.getElementById('soc-cards-container');
+
+        const icons = {
+          wazuh: 'fa-shield-halved', splunk: 'fa-chart-area', sentinel: 'fa-microsoft',
+          elastic: 'fa-magnifying-glass-chart', thehive: 'fa-boxes-stacked', misp: 'fa-network-wired',
+          slack: 'fa-slack', teams: 'fa-windows', discord: 'fa-discord'
+        };
+
+        container.innerHTML = Object.keys(data).map(name => {
+          const item = data[name];
+          const icon = icons[name] || 'fa-plug';
+
+          return `
+            <div class="soc-card">
+              <div class="soc-header">
+                <div class="soc-logo">
+                  <div class="soc-icon"><i class="fa-brands ${icon}"></i></div>
+                  <span>${name.toUpperCase()}</span>
+                </div>
+                <span class="badge badge-${item.enabled ? 'low' : 'medium'}">${item.enabled ? 'ENABLED' : 'DISABLED'}</span>
+              </div>
+              <div style="font-size: 0.85rem; color: var(--text-muted);">
+                Health: <span class="badge badge-${item.health === 'healthy' || item.health === 'configured' ? 'low' : 'critical'}">${item.health}</span>
+              </div>
+              <button class="btn btn-secondary" onclick="testIntegration('${name}')"><i class="fa-solid fa-vial"></i> Test Connection</button>
+            </div>
+          `;
+        }).join('');
+
+      } catch (err) {
+        console.error('Error loading SOC status:', err);
+      }
+    }
+
+    // Load GitHub Issues Table
+    async function loadGitHubIssues() {
+      try {
+        const res = await fetch('/api/github/issues');
+        const data = await res.json();
+        const tbody = document.getElementById('issues-table-body');
+
+        if (data.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No GitHub issues generated yet.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = data.map(i => `
+          <tr>
+            <td><code>${i.id.slice(0, 8)}...</code></td>
+            <td><code>${i.finding_id.slice(0, 8)}...</code></td>
+            <td><strong>#${i.issue_number}</strong></td>
+            <td><a href="${i.issue_url}" target="_blank" style="color: var(--primary-400); text-decoration: none;">${i.issue_url}</a></td>
+            <td><span class="badge badge-low">${i.status.toUpperCase()}</span></td>
+            <td>${new Date(i.created_at).toLocaleString()}</td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        console.error('Error loading GitHub issues:', err);
+      }
+    }
+
+    // Actions
+    async function triggerManualScan() {
+      const owner = document.getElementById('scan-owner').value;
+      const repo = document.getElementById('scan-repo').value;
+      const commit = document.getElementById('scan-commit').value;
+
+      alert(`Triggering security scan for ${owner}/${repo} at commit ${commit}...`);
+      try {
+        const res = await fetch('/scan', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({owner, repo, commit_sha: commit, notify_github: false})
+        });
+        const data = await res.json();
+        alert(`Scan completed successfully!\nScan ID: ${data.scan_id}\nTotal Findings: ${data.total_findings}`);
+        loadDashboard();
+      } catch (e) {
+        alert('Scan execution error: ' + e.message);
+      }
+    }
+
+    async function triggerRepoSync() {
+      alert('Synchronizing GitHub App installed repositories...');
+      try {
+        const res = await fetch('/api/repositories/sync', { method: 'POST' });
+        const data = await res.json();
+        alert(`Repository Sync Complete!\nAdded: ${data.added}\nUpdated: ${data.updated}\nRemoved: ${data.removed}`);
+        loadRepositories();
+      } catch (e) {
+        alert('Sync error: ' + e.message);
       }
     }
 
@@ -324,94 +893,56 @@
         const data = await res.json();
         alert(`Test response for ${name.toUpperCase()}:\n` + JSON.stringify(data, null, 2));
       } catch (e) {
-        alert(`Failed to test ${name}: ` + e.message);
+        alert(`Test failed for ${name}: ` + e.message);
       }
     }
 
-    let currentRepoPage = 1;
-    const repoPageSize = 10;
-
-    async function loadRepositories() {
-      try {
-        const search = document.getElementById('repo-search').value;
-        const vis = document.getElementById('repo-vis-filter').value;
-        
-        let url = `/api/repositories?page=${currentRepoPage}&page_size=${repoPageSize}`;
-        if (search) url += `&search=${encodeURIComponent(search)}`;
-        if (vis) url += `&visibility=${encodeURIComponent(vis)}`;
-
-        const res = await fetch(url);
-        const data = await res.json();
-
-        const tbody = document.getElementById('repo-table-body');
-        if (!data.repositories || data.repositories.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="11" style="text-align: center; color: var(--text-muted);">No installed repositories found.</td></tr>';
-          document.getElementById('repo-pagination-info').innerText = 'Showing 0 of 0 repositories';
-          document.getElementById('repo-btn-prev').disabled = true;
-          document.getElementById('repo-btn-next').disabled = true;
-          return;
-        }
-
-        tbody.innerHTML = data.repositories.map(r => `
-          <tr>
-            <td><strong><a href="${r.html_url}" target="_blank" style="color: var(--accent-blue); text-decoration: none;">${r.full_name}</a></strong></td>
-            <td><span class="badge badge-${r.private ? 'medium' : 'low'}">${r.visibility.toUpperCase()}</span></td>
-            <td><code>${r.language}</code></td>
-            <td>${r.default_branch}</td>
-            <td>${r.last_push ? new Date(r.last_push).toLocaleDateString() : 'N/A'}</td>
-            <td><span class="badge badge-${r.latest_scan ? 'low' : 'medium'}">${r.latest_scan ? r.latest_scan.status : 'Never'}</span></td>
-            <td><span class="badge badge-critical">${r.finding_counts.critical}</span></td>
-            <td><span class="badge badge-high">${r.finding_counts.high}</span></td>
-            <td><span class="badge badge-medium">${r.finding_counts.medium}</span></td>
-            <td><span class="badge badge-low">${r.finding_counts.low}</span></td>
-            <td><button onclick="viewRepoDetails('${r.owner}', '${r.name}')" style="background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); padding: 0.2rem 0.5rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">Details</button></td>
-          </tr>
-        `).join('');
-
-        document.getElementById('repo-pagination-info').innerText = `Page ${data.page} of ${data.total_pages} (${data.total} total repos)`;
-        document.getElementById('repo-btn-prev').disabled = data.page <= 1;
-        document.getElementById('repo-btn-next').disabled = data.page >= data.total_pages;
-
-      } catch (err) {
-        console.error('Error loading repositories:', err);
-      }
+    function setAITask(task) {
+      selectedAITask = task;
+      const titles = {
+        analyze: 'AI Vulnerability Analysis Workspace',
+        fix: 'AI Secure Code Remediation Workspace',
+        report: 'AI Executive CISO Report Generator',
+        chat: 'AI Security Assistant Chat'
+      };
+      document.getElementById('ai-task-title').innerText = titles[task] || 'AI Workspace';
     }
 
-    async function triggerRepoSync() {
+    function sendToAI(title, file) {
+      switchTab('ai-view');
+      setAITask('fix');
+      document.getElementById('ai-prompt-input').value = `Vulnerability: ${title}\nFile: ${file}\n\nPlease generate secure remediation patch.`;
+    }
+
+    async function runAIEngine() {
+      const prompt = document.getElementById('ai-prompt-input').value;
+      const lang = document.getElementById('ai-language-select').value;
+      const container = document.getElementById('ai-output-container');
+      const output = document.getElementById('ai-output-text');
+
+      if (!prompt) {
+        alert('Please enter code or vulnerability prompt.');
+        return;
+      }
+
+      container.style.display = 'block';
+      output.innerText = 'AI Engine processing request...';
+
       try {
-        const btn = event.target;
-        btn.disabled = true;
-        btn.innerText = 'Syncing...';
-        const res = await fetch('/api/repositories/sync', { method: 'POST' });
+        const endpoint = selectedAITask === 'fix' ? '/api/ai/fix' : '/api/ai/analyze';
+        const payload = selectedAITask === 'fix' 
+          ? { vulnerable_code: prompt, language: lang }
+          : { title: 'Vulnerability Analysis', file: 'app/main.py', code: prompt, scanner: 'Semgrep' };
+
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(payload)
+        });
         const data = await res.json();
-        alert(`Sync Complete!\nAdded: ${data.added}\nUpdated: ${data.updated}\nRemoved: ${data.removed}`);
-        loadRepositories();
-        loadDashboard();
+        output.innerText = JSON.stringify(data, null, 2);
       } catch (e) {
-        alert('Sync failed: ' + e.message);
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-rotate"></i> Sync Repos';
-      }
-    }
-
-    async function viewRepoDetails(owner, repo) {
-      try {
-        const res = await fetch(`/api/repositories/${owner}/${repo}`);
-        const data = await res.json();
-        alert(`Repository Security Profile: ${owner}/${repo}\n\n` +
-              `Risk Score: ${data.security_summary.risk_score} (Grade: ${data.security_summary.grade})\n` +
-              `Status: ${data.security_summary.status}\n` +
-              `Visibility: ${data.repository.visibility}\n` +
-              `Language: ${data.repository.language}\n` +
-              `Branch: ${data.repository.default_branch}\n\n` +
-              `Findings:\n` +
-              ` - Critical: ${data.finding_counts.critical}\n` +
-              ` - High: ${data.finding_counts.high}\n` +
-              ` - Medium: ${data.finding_counts.medium}\n` +
-              ` - Low: ${data.finding_counts.low}`);
-      } catch (e) {
-        alert(`Error fetching details for ${owner}/${repo}: ` + e.message);
+        output.innerText = 'AI Request Failed: ' + e.message;
       }
     }
 
@@ -423,15 +954,13 @@
     document.addEventListener('DOMContentLoaded', () => {
       loadDashboard();
       loadRepositories();
+      loadFindings();
+      loadSOCCards();
+      loadGitHubIssues();
 
-      document.getElementById('repo-search').addEventListener('input', () => {
-        currentRepoPage = 1;
-        loadRepositories();
-      });
-      document.getElementById('repo-vis-filter').addEventListener('change', () => {
-        currentRepoPage = 1;
-        loadRepositories();
-      });
+      // Search listeners
+      document.getElementById('repo-search').addEventListener('input', () => { currentRepoPage = 1; loadRepositories(); });
+      document.getElementById('repo-vis-filter').addEventListener('change', () => { currentRepoPage = 1; loadRepositories(); });
     });
   </script>
 </body>
