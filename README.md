@@ -278,11 +278,13 @@ erDiagram
     repositories ||--o{ scans : "has many"
     repositories ||--o{ events : "logs"
     scans ||--o{ findings : "contains"
+    findings ||--o{ github_issues : "tracks"
 
     repositories {
         int id PK
         string owner
         string name
+        string clone_url
         string default_branch
         datetime created_at
     }
@@ -292,6 +294,8 @@ erDiagram
         string commit_sha
         string branch
         string status
+        float duration
+        string scanner_versions
         datetime started_at
     }
     findings {
@@ -301,12 +305,25 @@ erDiagram
         string severity
         string title
         string file
+        string category
+        string confidence
+        string cwe
+        string owasp
+        string mitre
     }
     events {
         string id PK
         int repository_id FK
         string event
         string delivery_id
+        text payload
+    }
+    github_issues {
+        string id PK
+        string finding_id FK
+        int issue_number
+        string issue_url
+        string status
     }
 ```
 
@@ -320,10 +337,22 @@ erDiagram
 | `GET` | `/health` | Application health check endpoint |
 | `GET` | `/dashboard` | Interactive Web Dashboard UI |
 | `GET` | `/api/dashboard` | Dashboard metric cards and severity overview |
+| `GET` | `/api/dashboard/history` | Paginated scan history timeline data |
+| `GET` | `/api/dashboard/trends` | Weekly security findings trend over time |
+| `GET` | `/api/dashboard/leaderboard` | Repository risk score leaderboard ranking |
+| `GET` | `/api/dashboard/common-vulnerabilities` | Most frequently occurring vulnerability rule IDs |
+| `GET` | `/api/dashboard/scanner-usage` | Security scanner distribution statistics |
+| `GET` | `/api/dashboard/weekly-stats` | 7-day aggregate DevSecOps activity metrics |
 | `GET` | `/api/repositories` | Scanned repositories with risk score calculation |
 | `GET` | `/api/scans` | Full scan execution history |
 | `GET` | `/api/findings` | Filterable findings (by severity, scanner, status) |
 | `GET` | `/api/events` | Webhook delivery audit logs |
+| `GET` | `/api/github/issues` | List tracked GitHub Issue records |
+| `POST` | `/api/github/issues/create` | Manually create GitHub Issue for a vulnerability |
+| `GET` | `/api/github/issues/{id}` | Retrieve single GitHub Issue record details |
+| `GET` | `/api/export/sarif/{scan_id}` | Download GitHub Code Scanning compatible SARIF 2.1.0 JSON |
+| `GET` | `/api/export/pdf/{scan_id}` | Download CISO executive PDF security report |
+| `GET` | `/api/export/html/{scan_id}` | Download standalone HTML security report |
 | `GET` | `/api/ai/health` | Active AI provider health check |
 | `GET` | `/api/ai/providers` | List available registered AI providers |
 | `POST` | `/api/ai/analyze` | AI vulnerability analysis with attack scenarios and CVSS/OWASP mapping |

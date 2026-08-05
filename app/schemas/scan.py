@@ -21,12 +21,12 @@ from pydantic import BaseModel, Field
 class ScanRequest(BaseModel):
     """Request schema for initiating a repository scan."""
 
-    owner: str = Field(..., json_schema_extra={"example": "octocat"})
-    repo: str = Field(..., json_schema_extra={"example": "Hello-World"})
-    commit_sha: str = Field(..., json_schema_extra={"example": "7fd1a60b01f91b314f59955a4e4d4e80d8edf11d"})
-    installation_id: Optional[int] = Field(default=None, json_schema_extra={"example": 123456})
-    pr_number: Optional[int] = Field(default=None, json_schema_extra={"example": 42})
-    notify_github: bool = Field(default=True, description="Whether to post comments/issues to GitHub after scanning")
+    owner: str = Field(..., json_schema_extra={"example": "NATTOMR"})
+    repo: str = Field(..., json_schema_extra={"example": "secureguard-github-app"})
+    commit_sha: str = Field(..., json_schema_extra={"example": "main"})
+    installation_id: Optional[int] = Field(default=None, json_schema_extra={"example": 151376506})
+    pr_number: Optional[int] = Field(default=None, json_schema_extra={"example": None})
+    notify_github: bool = Field(default=False, description="Whether to post comments/issues to GitHub after scanning")
 
 
 class FindingSchema(BaseModel):

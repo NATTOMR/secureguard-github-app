@@ -114,8 +114,13 @@ def test_auth_status_endpoint(client):
     assert data["app_id"] == "4492546"
 
 
-def test_auth_test_endpoint_unauthenticated(client):
+def test_auth_test_endpoint_unauthenticated(client, monkeypatch):
     """Test GET /auth/test endpoint returns 401 when private key is unconfigured."""
+    from app.core.config import get_settings
+    monkeypatch.setenv("GITHUB_PRIVATE_KEY_PATH", "")
+    monkeypatch.setenv("PRIVATE_KEY_PATH", "")
+    get_settings.cache_clear()
+    
     response = client.get("/auth/test")
     assert response.status_code == 401
     data = response.json()

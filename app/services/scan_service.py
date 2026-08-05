@@ -20,6 +20,7 @@ Usage:
     report = await service.execute_scan("owner", "repo", "commit_sha", 123456)
 """
 
+import asyncio
 import uuid
 from typing import Any, Dict, List, Optional
 from datetime import datetime, timezone
@@ -144,4 +145,22 @@ class ScanService:
             "Completed scan %s for %s/%s. Found %d issues.", 
             scan_id, owner, repo, result.total_findings
         )
+
+        # 5. Dispatch ScanCompleted event to enterprise SOC integrations
+        try:
+            from app.integrations.connector_manager import ConnectorManager
+            manager = ConnectorManager()
+            scan_dict = {
+                "scan_id": scan_id,
+                "repository": f"{owner}/{repo}",
+                "commit_sha": commit_sha,
+                "total_findings": result.total_findings,
+                "critical_findings": result.critical_findings,
+                "high_findings": result.high_findings,
+                "timestamp": result.timestamp.isoformat(),
+            }
+            asyncio.create_task(manager.dispatch_scan_completed(scan_dict))
+        except Exception as e:
+            logger.warning("EventBus dispatch error: %s", str(e))
+
         return result

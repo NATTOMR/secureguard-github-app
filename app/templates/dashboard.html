@@ -21,6 +21,7 @@
       <li class="nav-item"><a href="#repositories"><i class="fa-solid fa-folder-tree"></i> Repositories</a></li>
       <li class="nav-item"><a href="#scans"><i class="fa-solid fa-microscope"></i> Scan History</a></li>
       <li class="nav-item"><a href="#findings"><i class="fa-solid fa-bug"></i> Findings</a></li>
+      <li class="nav-item"><a href="#integrations"><i class="fa-solid fa-network-wired"></i> SOC Integrations</a></li>
       <li class="nav-item"><a href="#events"><i class="fa-solid fa-receipt"></i> Webhook Audit</a></li>
     </ul>
   </aside>
@@ -79,6 +80,29 @@
             <div class="panel-title">Scanner Breakdown</div>
           </div>
           <canvas id="scannerChart" height="180"></canvas>
+        </div>
+      </div>
+
+      <!-- SOC Integrations Grid -->
+      <div class="panel-card" id="integrations">
+        <div class="panel-header">
+          <div class="panel-title">Enterprise SOC & Notification Integrations</div>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Platform / Connector</th>
+                <th>Category</th>
+                <th>Status</th>
+                <th>Health</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="soc-table-body">
+              <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Loading SOC connectors status...</td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -175,6 +199,37 @@
           }
         });
 
+        // Load SOC Integrations
+        try {
+          const socRes = await fetch('/api/integrations/status');
+          const socData = await socRes.json();
+          const socBody = document.getElementById('soc-table-body');
+          const categoryMap = {
+            wazuh: 'SIEM', splunk: 'SIEM', elastic: 'SIEM', sentinel: 'SIEM',
+            thehive: 'SOAR', misp: 'Threat Intel',
+            slack: 'Notification', teams: 'Notification', discord: 'Notification'
+          };
+
+          socBody.innerHTML = Object.keys(socData).map(k => {
+            const item = socData[k];
+            const isEnabled = item.enabled;
+            const health = item.health || 'unknown';
+            const cat = categoryMap[k] || 'Integration';
+
+            return `
+              <tr>
+                <td><strong>${k.toUpperCase()}</strong></td>
+                <td><span class="badge badge-low">${cat}</span></td>
+                <td><span class="badge badge-${isEnabled ? 'low' : 'medium'}">${isEnabled ? 'ENABLED' : 'DISABLED'}</span></td>
+                <td><span class="badge badge-${health === 'healthy' || health === 'configured' ? 'low' : 'critical'}">${health}</span></td>
+                <td><button onclick="testIntegration('${k}')" style="background: var(--accent-blue); color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer;">Test</button></td>
+              </tr>
+            `;
+          }).join('');
+        } catch (e) {
+          console.error('Error loading SOC status:', e);
+        }
+
         // Render Scans Table
         const tbody = document.getElementById('scan-table-body');
         if (data.latest_scans.length === 0) {
@@ -208,6 +263,21 @@
 
       } catch (err) {
         console.error('Error loading dashboard data:', err);
+      }
+    }
+
+    async function testIntegration(name) {
+      alert(`Testing connection to ${name.toUpperCase()}...`);
+      try {
+        const res = await fetch('/api/integrations/test', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({connector: name})
+        });
+        const data = await res.json();
+        alert(`Test response for ${name.toUpperCase()}:\n` + JSON.stringify(data, null, 2));
+      } catch (e) {
+        alert(`Failed to test ${name}: ` + e.message);
       }
     }
 

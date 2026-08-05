@@ -26,11 +26,17 @@ from app.db.models import EventModel, FindingModel, RepositoryModel, ScanModel
 from app.db.repository import DatabaseRepository
 from app.db.session import get_db
 from app.schemas.dashboard import (
+    CommonVulnerability,
+    DashboardHistoryResponse,
     DashboardOverviewResponse,
+    DashboardTrendResponse,
     EventResponse,
     FindingResponse,
+    RepositoryLeaderboardEntry,
     RepositoryResponse,
     ScanDetailResponse,
+    ScannerUsage,
+    WeeklyStats,
 )
 
 router = APIRouter(prefix="/api", tags=["Web Dashboard APIs"])
@@ -296,3 +302,131 @@ def get_events(
         )
         for e in events
     ]
+
+
+@router.get(
+    "/dashboard/history",
+    response_model=DashboardHistoryResponse,
+    summary="Scan History Timeline",
+    description="Returns paginated scan history timeline data for dashboard history chart.",
+)
+def get_dashboard_history(
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    repo_id: Optional[int] = Query(None),
+    status_filter: Optional[str] = Query(None, alias="status"),
+    db: Session = Depends(get_db),
+) -> DashboardHistoryResponse:
+    """Get scan history timeline."""
+    dao = DatabaseRepository(db)
+    scans = dao.get_scan_history(limit=limit, offset=offset, repo_id=repo_id, status=status_filter)
+    
+    total_count = db.execute(select(ScanModel)).scalars().all()
+    scans_resp = [
+        ScanDetailResponse(
+            id=s.id,
+            repository_id=s.repository_id,
+            repository_name=f"{s.repository.owner}/{s.repository.name}" if s.repository else "unknown",
+            commit_sha=s.commit_sha,
+            branch=s.branch,
+            trigger=s.trigger,
+            status=s.status,
+            started_at=s.started_at,
+            finished_at=s.finished_at,
+            duration=s.duration,
+            total_findings=len(s.findings),
+            findings=[
+                FindingResponse(
+                    id=f.id,
+                    scan_id=f.scan_id,
+                    scanner=f.scanner,
+                    severity=f.severity,
+                    title=f.title,
+                    description=f.description,
+                    file=f.file,
+                    line=f.line,
+                    rule=f.rule,
+                    recommendation=f.recommendation,
+                    cwe=f.cwe,
+                    owasp=f.owasp,
+                    cvss=f.cvss,
+                    status=f.status,
+                )
+                for f in s.findings
+            ],
+        )
+        for s in scans
+    ]
+    return DashboardHistoryResponse(scans=scans_resp, total_count=len(total_count))
+
+
+@router.get(
+    "/dashboard/trends",
+    response_model=DashboardTrendResponse,
+    summary="Security Findings Trend Over Time",
+    description="Returns weekly finding counts broken down by severity level.",
+)
+def get_dashboard_trends(
+    weeks: int = Query(12, ge=1, le=52),
+    db: Session = Depends(get_db),
+) -> DashboardTrendResponse:
+    """Get security trend chart data."""
+    dao = DatabaseRepository(db)
+    trend_data = dao.get_trend_data(weeks=weeks)
+    return DashboardTrendResponse(trend_data=trend_data, weeks=weeks)
+
+
+@router.get(
+    "/dashboard/leaderboard",
+    response_model=List[RepositoryLeaderboardEntry],
+    summary="Repository Risk Leaderboard",
+    description="Ranks scanned repositories by aggregate risk score.",
+)
+def get_repository_leaderboard(db: Session = Depends(get_db)) -> List[RepositoryLeaderboardEntry]:
+    """Get repository risk leaderboard."""
+    dao = DatabaseRepository(db)
+    entries = dao.get_repository_leaderboard()
+    return [RepositoryLeaderboardEntry(**entry) for entry in entries]
+
+
+@router.get(
+    "/dashboard/common-vulnerabilities",
+    response_model=List[CommonVulnerability],
+    summary="Most Common Vulnerabilities",
+    description="Returns the top recurring security vulnerability rule IDs.",
+)
+def get_common_vulnerabilities(
+    limit: int = Query(10, ge=1, le=50),
+    db: Session = Depends(get_db),
+) -> List[CommonVulnerability]:
+    """Get most common vulnerabilities."""
+    dao = DatabaseRepository(db)
+    items = dao.get_common_vulnerabilities(limit=limit)
+    return [CommonVulnerability(**item) for item in items]
+
+
+@router.get(
+    "/dashboard/scanner-usage",
+    response_model=List[ScannerUsage],
+    summary="Scanner Usage Statistics",
+    description="Returns distribution of security findings per scanner tool.",
+)
+def get_scanner_usage(db: Session = Depends(get_db)) -> List[ScannerUsage]:
+    """Get scanner usage statistics."""
+    dao = DatabaseRepository(db)
+    usage = dao.get_scanner_usage()
+    return [ScannerUsage(scanner=scanner, count=count) for scanner, count in usage.items()]
+
+
+@router.get(
+    "/dashboard/weekly-stats",
+    response_model=WeeklyStats,
+    summary="Weekly Activity Statistics",
+    description="Returns aggregate activity metrics for the last 7 days.",
+)
+def get_weekly_stats(db: Session = Depends(get_db)) -> WeeklyStats:
+    """Get weekly activity statistics."""
+    dao = DatabaseRepository(db)
+    stats = dao.get_weekly_stats()
+    return WeeklyStats(**stats)
+

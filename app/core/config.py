@@ -96,6 +96,20 @@ class Settings(BaseSettings):
     THEHIVE_API_KEY: Optional[str] = Field(default=None, description="TheHive API Key")
     MISP_URL: Optional[str] = Field(default=None, description="MISP Threat Intel URL")
     MISP_API_KEY: Optional[str] = Field(default=None, description="MISP API Key")
+    SLACK_WEBHOOK: Optional[str] = Field(default=None, description="Slack Incoming Webhook URL")
+    TEAMS_WEBHOOK: Optional[str] = Field(default=None, description="Microsoft Teams Webhook URL")
+    DISCORD_WEBHOOK: Optional[str] = Field(default=None, description="Discord Webhook URL")
+
+    # Integration Toggles
+    WAZUH_ENABLED: bool = Field(default=False, description="Enable Wazuh integration")
+    SPLUNK_ENABLED: bool = Field(default=False, description="Enable Splunk HEC integration")
+    SENTINEL_ENABLED: bool = Field(default=False, description="Enable Azure Sentinel integration")
+    ELASTIC_ENABLED: bool = Field(default=False, description="Enable Elastic Security integration")
+    THEHIVE_ENABLED: bool = Field(default=False, description="Enable TheHive integration")
+    MISP_ENABLED: bool = Field(default=False, description="Enable MISP Threat Intel integration")
+    SLACK_ENABLED: bool = Field(default=False, description="Enable Slack notifications")
+    TEAMS_ENABLED: bool = Field(default=False, description="Enable Teams notifications")
+    DISCORD_ENABLED: bool = Field(default=False, description="Enable Discord notifications")
 
     @field_validator("GITHUB_APP_ID", mode="before")
     @classmethod

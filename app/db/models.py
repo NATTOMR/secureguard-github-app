@@ -34,6 +34,7 @@ class RepositoryModel(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     owner: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    clone_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     default_branch: Mapped[str] = mapped_column(String(100), default="main")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
@@ -64,6 +65,8 @@ class ScanModel(Base):
     )
     finished_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     duration: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    scanner_versions: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    created_by: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, default="SecureGuard")
 
     # Relationships
     repository: Mapped["RepositoryModel"] = relationship("RepositoryModel", back_populates="scans")
@@ -85,13 +88,18 @@ class FindingModel(Base):
     line: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     rule: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     recommendation: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    category: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, index=True)
+    confidence: Mapped[Optional[str]] = mapped_column(String(20), nullable=True, default="HIGH")
     cwe: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     owasp: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    mitre: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     cvss: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    ai_fix: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(String(50), default="open", index=True)  # open, resolved, ignored
 
     # Relationships
     scan: Mapped["ScanModel"] = relationship("ScanModel", back_populates="findings")
+    issues: Mapped[List["GitHubIssueModel"]] = relationship("GitHubIssueModel", back_populates="finding", cascade="all, delete-orphan")
 
 
 class EventModel(Base):
@@ -103,12 +111,31 @@ class EventModel(Base):
     repository_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("repositories.id"), nullable=True, index=True)
     event: Mapped[str] = mapped_column(String(50), nullable=False, index=True)  # push, pull_request
     delivery_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    payload: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
 
     # Relationships
     repository: Mapped[Optional["RepositoryModel"]] = relationship("RepositoryModel", back_populates="events")
+
+
+class GitHubIssueModel(Base):
+    """GitHub Issue mapping database model."""
+
+    __tablename__ = "github_issues"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    finding_id: Mapped[str] = mapped_column(String(36), ForeignKey("findings.id"), nullable=False, index=True)
+    issue_number: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    issue_url: Mapped[str] = mapped_column(String(500), nullable=False)
+    status: Mapped[str] = mapped_column(String(50), default="open", index=True)  # open, closed
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
+
+    # Relationships
+    finding: Mapped["FindingModel"] = relationship("FindingModel", back_populates="issues")
 
 
 class AIAnalysisModel(Base):
@@ -125,3 +152,20 @@ class AIAnalysisModel(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
+
+
+class IntegrationEventModel(Base):
+    """Outbound SOC integration event log database model."""
+
+    __tablename__ = "integration_events"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    connector: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, index=True)  # sent, failed, queued
+    repository: Mapped[Optional[str]] = mapped_column(String(255), nullable=True, index=True)
+    scan_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True, index=True)
+    response: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
+

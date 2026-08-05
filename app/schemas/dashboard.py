@@ -90,3 +90,84 @@ class DashboardOverviewResponse(BaseModel):
     sast_count: int
     latest_scans: List[Dict[str, Any]]
     recent_events: List[Dict[str, Any]]
+
+
+class TrendDataPoint(BaseModel):
+    """Schema for a single week's finding counts by severity."""
+
+    week_start: str
+    critical: int = 0
+    high: int = 0
+    medium: int = 0
+    low: int = 0
+
+
+class RepositoryLeaderboardEntry(BaseModel):
+    """Schema for repository risk leaderboard entry."""
+
+    id: int
+    owner: str
+    name: str
+    risk_score: float
+    total_findings: int
+    critical_count: int
+
+
+class CommonVulnerability(BaseModel):
+    """Schema for commonly occurring vulnerability rules."""
+
+    rule: str
+    count: int
+    severity: str
+    scanner: str
+
+
+class ScannerUsage(BaseModel):
+    """Schema for scanner usage statistics."""
+
+    scanner: str
+    count: int
+
+
+class WeeklyStats(BaseModel):
+    """Schema for weekly activity statistics."""
+
+    scans_this_week: int
+    findings_this_week: int
+    new_repos_this_week: int
+    avg_scan_duration: float
+
+
+class DashboardHistoryResponse(BaseModel):
+    """Schema for paginated scan history response."""
+
+    scans: List[ScanDetailResponse]
+    total_count: int
+
+
+class DashboardTrendResponse(BaseModel):
+    """Schema for findings trend over time."""
+
+    trend_data: List[TrendDataPoint]
+    weeks: int
+
+
+class GitHubIssueResponse(BaseModel):
+    """Schema for GitHub issue tracking response."""
+
+    id: int
+    finding_id: str
+    issue_number: int
+    issue_url: str
+    status: str
+    created_at: datetime
+    finding_title: Optional[str] = None
+    finding_severity: Optional[str] = None
+
+
+class GitHubIssueCreateRequest(BaseModel):
+    """Schema for creating a GitHub issue from a finding."""
+
+    finding_id: str = Field(..., description="ID of the finding to create an issue for")
+    owner: str = Field(..., description="Repository owner")
+    repo: str = Field(..., description="Repository name")
