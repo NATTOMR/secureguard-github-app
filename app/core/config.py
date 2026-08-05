@@ -69,6 +69,14 @@ class Settings(BaseSettings):
     # Database Configuration
     DATABASE_URL: str = Field(default="sqlite:///./secureguard.db", description="Database connection URL")
 
+    # AI Assistant Configuration
+    AI_PROVIDER: str = Field(default="openai", description="AI Provider: openai, gemini, ollama, claude, azure")
+    OPENAI_API_KEY: Optional[str] = Field(default=None, description="OpenAI API key")
+    OPENAI_MODEL: str = Field(default="gpt-4o-mini", description="OpenAI model name")
+    OLLAMA_BASE_URL: str = Field(default="http://localhost:11434", description="Local Ollama base URL")
+    OLLAMA_MODEL: str = Field(default="llama3", description="Ollama model name")
+    AI_CACHE_ENABLED: bool = Field(default=True, description="Cache AI analysis responses")
+
     @field_validator("GITHUB_APP_ID", mode="before")
     @classmethod
     def sanitize_app_id(cls, v: Any) -> Any:

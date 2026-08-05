@@ -324,6 +324,10 @@ erDiagram
 | `GET` | `/api/scans` | Full scan execution history |
 | `GET` | `/api/findings` | Filterable findings (by severity, scanner, status) |
 | `GET` | `/api/events` | Webhook delivery audit logs |
+| `POST` | `/api/ai/analyze` | AI vulnerability analysis with attack scenarios and CVSS/OWASP mapping |
+| `POST` | `/api/ai/fix` | AI secure code remediation generator (Python, JS, TS, Go, Java, Docker, Terraform) |
+| `POST` | `/api/ai/report` | AI CISO executive security report generator |
+| `POST` | `/api/ai/chat` | Interactive security chat assistant |
 
 ---
 
