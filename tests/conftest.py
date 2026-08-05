@@ -15,11 +15,19 @@ Usage:
 """
 
 from typing import AsyncGenerator, Generator
+import os
 import pytest
 from fastapi.testclient import TestClient
 from httpx import ASGITransport, AsyncClient
 
 from app.main import create_app
+
+
+@pytest.fixture(autouse=True)
+def setup_test_env(monkeypatch):
+    """Ensure GITHUB_APP_ID is set during test runs if missing from environment."""
+    if not os.getenv("GITHUB_APP_ID"):
+        monkeypatch.setenv("GITHUB_APP_ID", "4492546")
 
 
 @pytest.fixture

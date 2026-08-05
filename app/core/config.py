@@ -48,7 +48,7 @@ class Settings(BaseSettings):
     PORT: int = Field(default=8000, description="Bind port number")
 
     # GitHub App Credentials
-    GITHUB_APP_ID: Optional[int] = Field(default=None, description="GitHub App ID")
+    GITHUB_APP_ID: Optional[int] = Field(default=4492546, description="GitHub App ID")
     GITHUB_CLIENT_ID: Optional[str] = Field(default=None, description="GitHub Client ID")
     GITHUB_INSTALLATION_ID: Optional[int] = Field(default=None, description="GitHub Installation ID")
     GITHUB_WEBHOOK_SECRET: Optional[str] = Field(default=None, description="GitHub Webhook Secret")
