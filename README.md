@@ -267,6 +267,18 @@ Text:
 
 ---
 
+## 🔍 Enterprise Repository Discovery
+
+SecureGuard automatically discovers, indexes, and monitors all repositories installed for the GitHub App.
+
+### Key Capabilities:
+- **Automatic GitHub Discovery**: Periodically and via webhooks calls `GET /installation/repositories` to discover newly added or uninstalled repositories.
+- **Repository Sync Engine**: `RepositorySyncService` synchronizes repository metadata (`github_repository_id`, `full_name`, `private`, `visibility`, `language`, `size`, `archived`, `disabled`, `last_push`, `last_sync`) and marks uninstalled repos as `is_active=False`.
+- **Automatic Webhook Sync**: Triggered automatically whenever `installation` or `installation_repositories` webhook events are delivered.
+- **Dashboard Repositories Page**: Includes search filtering, language and visibility dropdown filters, interactive pagination, finding severity badges, and drill-down security details.
+
+---
+
 ## 📊 Enterprise Web Dashboard
 
 Access the live interactive web dashboard at: [http://127.0.0.1:8000/dashboard](http://127.0.0.1:8000/dashboard)
@@ -282,10 +294,20 @@ erDiagram
 
     repositories {
         int id PK
+        int github_repository_id
         string owner
         string name
-        string clone_url
+        string full_name
+        boolean private
+        string visibility
         string default_branch
+        string language
+        int size
+        boolean archived
+        boolean disabled
+        boolean is_active
+        datetime last_push
+        datetime last_sync
         datetime created_at
     }
     scans {
@@ -343,10 +365,15 @@ erDiagram
 | `GET` | `/api/dashboard/common-vulnerabilities` | Most frequently occurring vulnerability rule IDs |
 | `GET` | `/api/dashboard/scanner-usage` | Security scanner distribution statistics |
 | `GET` | `/api/dashboard/weekly-stats` | 7-day aggregate DevSecOps activity metrics |
-| `GET` | `/api/repositories` | Scanned repositories with risk score calculation |
+| `GET` | `/api/repositories` | Paginated installed repositories with filtering (`search`, `language`, `visibility`, `archived`) |
+| `GET` | `/api/repositories/{owner}/{repo}` | Repository security profile (metadata, latest scan, branch, language, risk score) |
+| `POST` | `/api/repositories/sync` | Trigger manual repository discovery synchronization |
 | `GET` | `/api/scans` | Full scan execution history |
 | `GET` | `/api/findings` | Filterable findings (by severity, scanner, status) |
 | `GET` | `/api/events` | Webhook delivery audit logs |
+| `GET` | `/api/integrations` | List configured SOC & notification connectors |
+| `GET` | `/api/integrations/status` | SOC connector health and status check |
+| `POST` | `/api/integrations/sync` | Manual alert dispatch to SOC connectors |
 | `GET` | `/api/github/issues` | List tracked GitHub Issue records |
 | `POST` | `/api/github/issues/create` | Manually create GitHub Issue for a vulnerability |
 | `GET` | `/api/github/issues/{id}` | Retrieve single GitHub Issue record details |

@@ -17,7 +17,7 @@ Usage:
 """
 
 from fastapi import APIRouter
-from app.api.routes import ai, auth, dashboard, export, github_issues, health, integrations, scan, webhook
+from app.api.routes import ai, auth, dashboard, export, github_issues, health, integrations, repositories, scan, webhook
 
 api_router = APIRouter()
 
@@ -32,6 +32,9 @@ api_router.include_router(auth.router)
 
 # Include scanning routes at /scan
 api_router.include_router(scan.router)
+
+# Include repository discovery routes at /api/repositories
+api_router.include_router(repositories.router)
 
 # Include dashboard API routes at /api
 api_router.include_router(dashboard.router)

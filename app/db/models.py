@@ -20,7 +20,7 @@ from datetime import datetime, timezone
 import uuid
 from typing import List, Optional
 
-from sqlalchemy import Column, DateTime, Float, ForeignKey, Index, Integer, String, Text
+from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -32,11 +32,26 @@ class RepositoryModel(Base):
     __tablename__ = "repositories"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    github_repository_id: Mapped[Optional[int]] = mapped_column(Integer, unique=True, nullable=True, index=True)
     owner: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    full_name: Mapped[Optional[str]] = mapped_column(String(255), unique=True, nullable=True, index=True)
+    private: Mapped[bool] = mapped_column(Boolean, default=False)
+    visibility: Mapped[str] = mapped_column(String(50), default="public", index=True)
     clone_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    html_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     default_branch: Mapped[str] = mapped_column(String(100), default="main")
+    language: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, index=True)
+    size: Mapped[int] = mapped_column(Integer, default=0)
+    archived: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    disabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    last_push: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_sync: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
 

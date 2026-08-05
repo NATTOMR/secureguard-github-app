@@ -201,8 +201,16 @@ async def handle_webhook(
     except Exception:
         payload = {}
 
+    # Dispatch repository discovery sync for installation events
+    if x_github_event in ("installation", "installation_repositories"):
+        installation_id = payload.get("installation", {}).get("id")
+        from app.services.repo_sync_service import RepositorySyncService
+        sync_service = RepositorySyncService()
+        background_tasks.add_task(sync_service.sync_installation, installation_id)
+        msg = f"Webhook '{x_github_event}' queued for repository synchronization"
+
     # Dispatch to background task if event is push or pull_request
-    if x_github_event in ("push", "pull_request"):
+    elif x_github_event in ("push", "pull_request"):
         background_tasks.add_task(
             process_webhook_event,
             x_github_event,

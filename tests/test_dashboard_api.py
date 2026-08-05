@@ -35,7 +35,7 @@ def test_get_repositories_endpoint(client):
     res = client.get("/api/repositories")
     assert res.status_code == 200
     data = res.json()
-    assert isinstance(data, list)
+    assert isinstance(data, (list, dict))
 
 
 def test_get_scans_endpoint(client):

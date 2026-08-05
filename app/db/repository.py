@@ -44,6 +44,7 @@ class DatabaseRepository:
             repo = RepositoryModel(
                 owner=owner,
                 name=name,
+                full_name=f"{owner}/{name}",
                 default_branch=default_branch,
                 created_at=datetime.now(timezone.utc),
             )
@@ -51,6 +52,119 @@ class DatabaseRepository:
             self.db.commit()
             self.db.refresh(repo)
         return repo
+
+    def get_paginated_repositories(
+        self,
+        page: int = 1,
+        page_size: int = 20,
+        search: Optional[str] = None,
+        language: Optional[str] = None,
+        visibility: Optional[str] = None,
+        archived: Optional[bool] = None,
+    ) -> Dict[str, Any]:
+        """Fetch paginated repositories with filtering options and findings counts."""
+        stmt = select(RepositoryModel).where(RepositoryModel.is_active == True)
+
+        if search:
+            search_pattern = f"%{search.strip()}%"
+            stmt = stmt.where(
+                (RepositoryModel.name.ilike(search_pattern))
+                | (RepositoryModel.owner.ilike(search_pattern))
+                | (RepositoryModel.full_name.ilike(search_pattern))
+            )
+        if language:
+            stmt = stmt.where(func.lower(RepositoryModel.language) == language.strip().lower())
+        if visibility:
+            stmt = stmt.where(func.lower(RepositoryModel.visibility) == visibility.strip().lower())
+        if archived is not None:
+            stmt = stmt.where(RepositoryModel.archived == archived)
+
+        # Count total matches
+        count_stmt = select(func.count()).select_from(stmt.subquery())
+        total = self.db.execute(count_stmt).scalar() or 0
+
+        # Execute pagination
+        offset = (page - 1) * page_size
+        paginated_stmt = stmt.order_by(desc(RepositoryModel.updated_at)).limit(page_size).offset(offset)
+        repos = self.db.execute(paginated_stmt).scalars().all()
+
+        # Build repository list with finding counts
+        repo_list = []
+        for r in repos:
+            latest_scan = (
+                self.db.execute(
+                    select(ScanModel)
+                    .where(ScanModel.repository_id == r.id)
+                    .order_by(desc(ScanModel.started_at))
+                    .limit(1)
+                )
+                .scalar_one_or_none()
+            )
+
+            # Count findings by severity for this repository
+            findings_stmt = (
+                select(FindingModel.severity, func.count(FindingModel.id).label("count"))
+                .join(ScanModel, ScanModel.id == FindingModel.scan_id)
+                .where(ScanModel.repository_id == r.id)
+                .group_by(FindingModel.severity)
+            )
+            finding_rows = self.db.execute(findings_stmt).all()
+            counts = {row.severity.lower(): int(row.count) for row in finding_rows}
+
+            critical = counts.get("critical", 0)
+            high = counts.get("high", 0)
+            medium = counts.get("medium", 0)
+            low = counts.get("low", 0)
+            risk_score = critical * 10 + high * 5 + medium * 2 + low * 1
+
+            repo_list.append({
+                "id": r.id,
+                "github_repository_id": r.github_repository_id,
+                "owner": r.owner,
+                "name": r.name,
+                "full_name": r.full_name or f"{r.owner}/{r.name}",
+                "private": r.private,
+                "visibility": r.visibility or "public",
+                "default_branch": r.default_branch or "main",
+                "language": r.language or "Unknown",
+                "size": r.size,
+                "archived": r.archived,
+                "disabled": r.disabled,
+                "is_active": r.is_active,
+                "html_url": r.html_url or f"https://github.com/{r.owner}/{r.name}",
+                "clone_url": r.clone_url or f"https://github.com/{r.owner}/{r.name}.git",
+                "last_push": r.last_push.isoformat() if r.last_push else None,
+                "last_sync": r.last_sync.isoformat() if r.last_sync else None,
+                "latest_scan": {
+                    "scan_id": latest_scan.id,
+                    "status": latest_scan.status,
+                    "started_at": latest_scan.started_at.isoformat() if latest_scan.started_at else None,
+                    "commit_sha": latest_scan.commit_sha[:7],
+                } if latest_scan else None,
+                "finding_counts": {
+                    "critical": critical,
+                    "high": high,
+                    "medium": medium,
+                    "low": low,
+                    "total": critical + high + medium + low,
+                },
+                "risk_score": risk_score,
+            })
+
+        return {
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": (total + page_size - 1) // page_size if page_size > 0 else 1,
+            "repositories": repo_list,
+        }
+
+    def get_repository_by_owner_repo(self, owner: str, repo: str) -> Optional[RepositoryModel]:
+        """Fetch a single repository by owner and name."""
+        stmt = select(RepositoryModel).where(
+            RepositoryModel.owner == owner, RepositoryModel.name == repo
+        )
+        return self.db.execute(stmt).scalar_one_or_none()
 
     def save_scan_result(
         self,

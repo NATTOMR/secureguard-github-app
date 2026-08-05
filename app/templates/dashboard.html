@@ -83,6 +83,53 @@
         </div>
       </div>
 
+      <!-- Installed Repositories Grid -->
+      <div class="panel-card" id="repositories">
+        <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+          <div class="panel-title">Installed GitHub Repositories</div>
+          <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <input type="text" id="repo-search" placeholder="Filter repositories..." style="background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); padding: 0.4rem 0.8rem; border-radius: 4px; font-size: 0.85rem;">
+            <select id="repo-vis-filter" style="background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); padding: 0.4rem 0.8rem; border-radius: 4px; font-size: 0.85rem;">
+              <option value="">All Visibility</option>
+              <option value="public">Public</option>
+              <option value="private">Private</option>
+            </select>
+            <button onclick="triggerRepoSync()" style="background: var(--accent-blue); color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 4px; cursor: pointer; font-size: 0.85rem; font-weight: 600;">
+              <i class="fa-solid fa-rotate"></i> Sync Repos
+            </button>
+          </div>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Repository</th>
+                <th>Visibility</th>
+                <th>Language</th>
+                <th>Branch</th>
+                <th>Last Push</th>
+                <th>Last Scan</th>
+                <th>Critical</th>
+                <th>High</th>
+                <th>Medium</th>
+                <th>Low</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="repo-table-body">
+              <tr><td colspan="11" style="text-align: center; color: var(--text-muted);">Loading discovered repositories...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; color: var(--text-muted); font-size: 0.85rem;">
+          <span id="repo-pagination-info">Showing 0 repositories</span>
+          <div style="display: flex; gap: 0.5rem;">
+            <button id="repo-btn-prev" onclick="changeRepoPage(-1)" disabled style="background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); padding: 0.25rem 0.6rem; border-radius: 4px; cursor: pointer;">Prev</button>
+            <button id="repo-btn-next" onclick="changeRepoPage(1)" disabled style="background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); padding: 0.25rem 0.6rem; border-radius: 4px; cursor: pointer;">Next</button>
+          </div>
+        </div>
+      </div>
+
       <!-- SOC Integrations Grid -->
       <div class="panel-card" id="integrations">
         <div class="panel-header">
@@ -281,7 +328,111 @@
       }
     }
 
-    document.addEventListener('DOMContentLoaded', loadDashboard);
+    let currentRepoPage = 1;
+    const repoPageSize = 10;
+
+    async function loadRepositories() {
+      try {
+        const search = document.getElementById('repo-search').value;
+        const vis = document.getElementById('repo-vis-filter').value;
+        
+        let url = `/api/repositories?page=${currentRepoPage}&page_size=${repoPageSize}`;
+        if (search) url += `&search=${encodeURIComponent(search)}`;
+        if (vis) url += `&visibility=${encodeURIComponent(vis)}`;
+
+        const res = await fetch(url);
+        const data = await res.json();
+
+        const tbody = document.getElementById('repo-table-body');
+        if (!data.repositories || data.repositories.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="11" style="text-align: center; color: var(--text-muted);">No installed repositories found.</td></tr>';
+          document.getElementById('repo-pagination-info').innerText = 'Showing 0 of 0 repositories';
+          document.getElementById('repo-btn-prev').disabled = true;
+          document.getElementById('repo-btn-next').disabled = true;
+          return;
+        }
+
+        tbody.innerHTML = data.repositories.map(r => `
+          <tr>
+            <td><strong><a href="${r.html_url}" target="_blank" style="color: var(--accent-blue); text-decoration: none;">${r.full_name}</a></strong></td>
+            <td><span class="badge badge-${r.private ? 'medium' : 'low'}">${r.visibility.toUpperCase()}</span></td>
+            <td><code>${r.language}</code></td>
+            <td>${r.default_branch}</td>
+            <td>${r.last_push ? new Date(r.last_push).toLocaleDateString() : 'N/A'}</td>
+            <td><span class="badge badge-${r.latest_scan ? 'low' : 'medium'}">${r.latest_scan ? r.latest_scan.status : 'Never'}</span></td>
+            <td><span class="badge badge-critical">${r.finding_counts.critical}</span></td>
+            <td><span class="badge badge-high">${r.finding_counts.high}</span></td>
+            <td><span class="badge badge-medium">${r.finding_counts.medium}</span></td>
+            <td><span class="badge badge-low">${r.finding_counts.low}</span></td>
+            <td><button onclick="viewRepoDetails('${r.owner}', '${r.name}')" style="background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); padding: 0.2rem 0.5rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">Details</button></td>
+          </tr>
+        `).join('');
+
+        document.getElementById('repo-pagination-info').innerText = `Page ${data.page} of ${data.total_pages} (${data.total} total repos)`;
+        document.getElementById('repo-btn-prev').disabled = data.page <= 1;
+        document.getElementById('repo-btn-next').disabled = data.page >= data.total_pages;
+
+      } catch (err) {
+        console.error('Error loading repositories:', err);
+      }
+    }
+
+    async function triggerRepoSync() {
+      try {
+        const btn = event.target;
+        btn.disabled = true;
+        btn.innerText = 'Syncing...';
+        const res = await fetch('/api/repositories/sync', { method: 'POST' });
+        const data = await res.json();
+        alert(`Sync Complete!\nAdded: ${data.added}\nUpdated: ${data.updated}\nRemoved: ${data.removed}`);
+        loadRepositories();
+        loadDashboard();
+      } catch (e) {
+        alert('Sync failed: ' + e.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-rotate"></i> Sync Repos';
+      }
+    }
+
+    async function viewRepoDetails(owner, repo) {
+      try {
+        const res = await fetch(`/api/repositories/${owner}/${repo}`);
+        const data = await res.json();
+        alert(`Repository Security Profile: ${owner}/${repo}\n\n` +
+              `Risk Score: ${data.security_summary.risk_score} (Grade: ${data.security_summary.grade})\n` +
+              `Status: ${data.security_summary.status}\n` +
+              `Visibility: ${data.repository.visibility}\n` +
+              `Language: ${data.repository.language}\n` +
+              `Branch: ${data.repository.default_branch}\n\n` +
+              `Findings:\n` +
+              ` - Critical: ${data.finding_counts.critical}\n` +
+              ` - High: ${data.finding_counts.high}\n` +
+              ` - Medium: ${data.finding_counts.medium}\n` +
+              ` - Low: ${data.finding_counts.low}`);
+      } catch (e) {
+        alert(`Error fetching details for ${owner}/${repo}: ` + e.message);
+      }
+    }
+
+    function changeRepoPage(delta) {
+      currentRepoPage += delta;
+      loadRepositories();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadDashboard();
+      loadRepositories();
+
+      document.getElementById('repo-search').addEventListener('input', () => {
+        currentRepoPage = 1;
+        loadRepositories();
+      });
+      document.getElementById('repo-vis-filter').addEventListener('change', () => {
+        currentRepoPage = 1;
+        loadRepositories();
+      });
+    });
   </script>
 </body>
 </html>
