@@ -92,8 +92,8 @@ def test_api_ai_analyze_endpoint(client):
     res = client.post("/api/ai/analyze", json=payload)
     assert res.status_code == 200
     data = res.json()
-    assert "risk_analysis" in data
-    assert "ai_explanation" in data
+    assert "cvss_estimate" in data
+    assert "cwe" in data
 
 
 def test_api_ai_fix_endpoint(client):

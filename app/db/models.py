@@ -109,3 +109,19 @@ class EventModel(Base):
 
     # Relationships
     repository: Mapped[Optional["RepositoryModel"]] = relationship("RepositoryModel", back_populates="events")
+
+
+class AIAnalysisModel(Base):
+    """AI Analysis audit database table model."""
+
+    __tablename__ = "ai_analyses"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    finding_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True, index=True)
+    provider: Mapped[str] = mapped_column(String(50), nullable=False)
+    latency: Mapped[float] = mapped_column(Float, default=0.0)
+    tokens_used: Mapped[int] = mapped_column(Integer, default=0)
+    analysis_json: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )

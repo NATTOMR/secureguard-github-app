@@ -29,17 +29,19 @@ from app.ai.llm_client import LLMClient
 from app.ai.prompt_builder import PromptBuilder
 from app.ai.remediation_generator import RemediationGenerator
 from app.schemas.ai import AnalyzeRequest, ChatRequest, FixRequest, ReportRequest
+from app.schemas.ai_analysis import AIAnalysisResponse
 
 router = APIRouter(prefix="/api/ai", tags=["AI Security Assistant"])
 
 
 @router.post(
     "/analyze",
+    response_model=AIAnalysisResponse,
     status_code=status.HTTP_200_OK,
     summary="AI Vulnerability Analysis",
     description="Generates AI vulnerability explanation, attack scenario, CVSS/CWE/OWASP mappings, and recommendations.",
 )
-async def analyze_vulnerability(req: AnalyzeRequest) -> Dict[str, Any]:
+async def analyze_vulnerability(req: AnalyzeRequest) -> AIAnalysisResponse:
     """Perform AI vulnerability analysis."""
     engine = AnalysisEngine()
     result = await engine.analyze_finding(

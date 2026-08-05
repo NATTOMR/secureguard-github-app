@@ -331,6 +331,14 @@ erDiagram
 | `POST` | `/api/ai/report` | AI CISO executive security report generator |
 | `POST` | `/api/ai/chat` | Interactive security chat assistant |
 
+### 🧠 AI Vulnerability Analysis Engine Categories
+
+- 🔑 **Secrets Scanner Prompt**: Hardcoded API keys, OAuth tokens, git history cleanup.
+- ⚡ **SAST Scanner Prompt**: Injection flaws, XSS, unsafe deserialization, insecure crypto.
+- 📦 **Dependency SCA Prompt**: Vulnerable open-source packages and CVE upgrade paths.
+- 🐳 **Container Prompt**: Dockerfile misconfigurations, root privilege execution, base image risks.
+- 🏗️ **IaC Prompt**: Terraform, CloudFormation, and Kubernetes security policy enforcement.
+
 ---
 
 ## 🧪 Running Tests
