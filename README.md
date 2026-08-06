@@ -9,16 +9,21 @@
 
 ---
 
-## ✨ Features
+---
 
-- **🔑 Dual Authentication Engine**: Built-in GitHub App RS256 JWT generator and Installation Access Token exchange service with automatic in-memory caching.
-- **🕵️ Secret Detection**: Scans for leaked AWS Keys, GitHub Tokens, JWTs, Stripe/Slack API keys, and exposed `.env` files.
-- **🔬 SAST & OWASP Top 10 Scanning**: Detects Code Injections (`eval`, `exec`), Unsafe Deserialization (`pickle.loads`), SQL Injection patterns, XSS (`innerHTML`), and weak cryptography.
-- **⚡ Dual-Engine Fallback**: Runs Semgrep CLI if installed, with a high-performance native Python pattern matching fallback.
-- **🤖 GitHub Automation**:
-  - Posts Markdown security reports as Pull Request review comments or commit status comments.
-  - Automatically creates GitHub Issues for **CRITICAL** and **HIGH** severity findings with built-in deduplication (`secureguard` label).
-- **🔒 Security First**: Masking of secrets in logs, non-root Docker execution, and safe temporary workspace cleanup.
+## 🔗 Quick Access Links & Web Interfaces
+
+| Interface | URL | Description |
+| :--- | :--- | :--- |
+| 📊 **Enterprise Web Dashboard** | [`http://127.0.0.1:8000/dashboard`](http://127.0.0.1:8000/dashboard) | Dark-themed DevSecOps & SOC interactive dashboard |
+| 📖 **Enterprise API Portal** | [`http://127.0.0.1:8000/docs-enterprise`](http://127.0.0.1:8000/docs-enterprise) | Card-based interactive API Portal (`/portal`) |
+| ⚡ **Swagger UI** | [`http://127.0.0.1:8000/docs`](http://127.0.0.1:8000/docs) | Interactive Swagger API Documentation |
+| 📘 **ReDoc Documentation** | [`http://127.0.0.1:8000/redoc`](http://127.0.0.1:8000/redoc) | Standalone ReDoc OpenAPI documentation |
+| 📄 **OpenAPI Specification** | [`http://127.0.0.1:8000/openapi.json`](http://127.0.0.1:8000/openapi.json) | Raw OpenAPI 3.0 JSON schema specification |
+| 🩺 **Health Check API** | [`http://127.0.0.1:8000/health`](http://127.0.0.1:8000/health) | Application & database operational health check |
+| 🔐 **GitHub Auth Status** | [`http://127.0.0.1:8000/auth/status`](http://127.0.0.1:8000/auth/status) | GitHub App credentials & key status |
+| 🔑 **GitHub Auth Live Test** | [`http://127.0.0.1:8000/auth/test`](http://127.0.0.1:8000/auth/test) | Live JWT & Installation Access Token verification |
+| 📂 **GitHub Repository** | [`https://github.com/NATTOMR/secureguard-github-app`](https://github.com/NATTOMR/secureguard-github-app) | Official GitHub source code repository |
 
 ---
 
